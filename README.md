@@ -1,4 +1,4 @@
-# PI3-turma2-6 "SuperID"
+# PI3-Turma2-6 "SuperID"
 Projeto Integrador 3 / PUC CAMPINAS Engenharia de Software / Fevereiro de 2025 -> 01 de junho de 2025
 
 Integrantes: 
