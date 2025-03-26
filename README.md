@@ -6,6 +6,11 @@ Integrantes:
 - Filipe Ribeiro Simões
 - Marcos Antônio Vlaério Filho
 - Pedro Facine Nery
+  
+Orientadores:
+- Prof. Mateus Dias
+- Profa. Renata Arantes
+- Prof. Luã Marcelo
 
 TEMA DO PROJETO: Gerenciador de Autenticações
 -------------------------------
