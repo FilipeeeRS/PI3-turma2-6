@@ -3,6 +3,7 @@ Projeto Integrador 3 / PUC CAMPINAS Engenharia de Software / Fevereiro de 2025 -
 
 Integrantes: 
 - Isaac Vitor Silva Bertonha
+- João Masayuki Kobata
 - Filipe Ribeiro Simões
 - Marcos Antônio Vlaério Filho
 - Pedro Facine Nery
