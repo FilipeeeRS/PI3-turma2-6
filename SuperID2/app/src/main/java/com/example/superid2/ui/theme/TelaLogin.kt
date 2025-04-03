@@ -2,7 +2,6 @@ package com.example.superid2.ui.theme
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.superid2.R
 
 @Composable
-fun LoginScreen() {
+fun TelaLogin() {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -69,7 +68,7 @@ fun LoginScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* TODO: Implementar login */ },
+            onClick = { /* TODO: Implementar oq vem dps de login!!! */ },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
         ) {
@@ -81,7 +80,7 @@ fun LoginScreen() {
 
 
         Button(
-            onClick = { /* TODO: Implementar cadastro */ },
+            onClick = { /* TODO: Implementar o cadastro do usuario!!! */ },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
         ) {
@@ -97,5 +96,5 @@ fun LoginScreen() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
-    LoginScreen()
+    TelaLogin()
 }
