@@ -11,10 +11,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.superid2.R
 
 @Composable
-fun TelaLogin() {
+fun TelaLogin(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -27,20 +29,26 @@ fun TelaLogin() {
     ) {
         Spacer(modifier = Modifier.height(100.dp))
 
-        //imagem
+        // Imagem
         Image(
             painter = painterResource(id = R.drawable.c8a7ae39_b091_4a6a_af43_15f8453e8b98),
             contentDescription = "Logo da aplicação",
             modifier = Modifier.size(120.dp)
         )
 
-        //texto superID
-        Text(text = "SuperID", style = MaterialTheme.typography.h3)
+        // Texto "SuperID"
+        Text(
+            text = "SuperID",
+            style = MaterialTheme.typography.h3,
+            fontSize = 32.sp // Aumentado para destacar mais
+        )
         Spacer(modifier = Modifier.height(50.dp))
 
+        // Texto "Login"
         Text(
             text = "Login",
             style = MaterialTheme.typography.h4,
+            fontSize = 24.sp, // Aumentado para melhorar a visibilidade
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 8.dp)
@@ -51,7 +59,7 @@ fun TelaLogin() {
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("E-mail") },
+            label = { Text("E-mail", fontSize = 18.sp) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -60,7 +68,7 @@ fun TelaLogin() {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Senha") },
+            label = { Text("Senha", fontSize = 18.sp) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -72,29 +80,26 @@ fun TelaLogin() {
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
         ) {
-            Text(text = "Login", color = Color.White)
+            Text(text = "Login", color = Color.White, fontSize = 20.sp)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Não possui cadastro ainda?", color = Color.Gray)
-
+        Text(text = "Não possui cadastro ainda?", color = Color.Gray, fontSize = 16.sp)
 
         Button(
-            onClick = { /* TODO: Implementar o cadastro do usuario!!! */ },
+            onClick = { navController.navigate("tela_cadastro") },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
         ) {
-            Text(text = "Cadastre-se", color = Color.White)
+            Text(text = "Cadastre-se", color = Color.White, fontSize = 20.sp)
         }
     }
 }
 
-
-
-
-
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
-    TelaLogin()
+    TelaLogin(
+        navController = TODO()
+    )
 }
