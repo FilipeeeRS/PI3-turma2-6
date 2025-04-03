@@ -23,14 +23,14 @@ fun TelaInicial(onContinuarClick: () -> Unit) {
             Text(
                 text = "SuperID",
                 style = MaterialTheme.typography.headlineLarge,
-                fontSize = 32.sp // Ajustando tamanho para combinar com h3
+                fontSize = 32.sp
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "O que é o SuperID?",
                 style = MaterialTheme.typography.headlineMedium,
-                fontSize = 24.sp // Ajustando para combinar com h4
+                fontSize = 24.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -43,10 +43,10 @@ fun TelaInicial(onContinuarClick: () -> Unit) {
                         "- Recuperação de senha por email\n\n" +
                         "O sistema possui duas partes: um aplicativo Android para gestão de credenciais e uma integração web para login sem senha em sites parceiros.",
                 style = MaterialTheme.typography.bodyLarge,
-                fontSize = 18.sp // Aumentando para melhorar a legibilidade
+                fontSize = 18.sp
             )
 
-            Spacer(modifier = Modifier.weight(1f)) // Empurra o botão para baixo
+            Spacer(modifier = Modifier.weight(1f))
         }
 
         Button(
@@ -58,7 +58,7 @@ fun TelaInicial(onContinuarClick: () -> Unit) {
             colors= ButtonDefaults.buttonColors(containerColor = Color.Black),
             shape= RectangleShape
         ) {
-            Text("OK", fontSize = 20.sp) // Ajuste do tamanho do texto do botão
+            Text("OK", color = Color.White, fontSize = 20.sp)
         }
     }
 }

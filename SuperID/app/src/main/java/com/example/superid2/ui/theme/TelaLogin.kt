@@ -40,7 +40,7 @@ fun TelaLogin(navController: NavController) {
         Text(
             text = "SuperID",
             style = MaterialTheme.typography.h3,
-            fontSize = 32.sp // Aumentado para destacar mais
+            fontSize = 32.sp
         )
         Spacer(modifier = Modifier.height(50.dp))
 
@@ -48,7 +48,7 @@ fun TelaLogin(navController: NavController) {
         Text(
             text = "Login",
             style = MaterialTheme.typography.h4,
-            fontSize = 24.sp, // Aumentado para melhorar a visibilidade
+            fontSize = 24.sp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 8.dp)
