@@ -17,49 +17,41 @@ import com.example.superid2.R
 
 @Composable
 fun TelaLogin(navController: NavController) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember {mutableStateOf("")}
+    var password by remember {mutableStateOf("")}
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
+        Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(100.dp))
 
-        // Imagem
         Image(
             painter = painterResource(id = R.drawable.c8a7ae39_b091_4a6a_af43_15f8453e8b98),
             contentDescription = "Logo da aplicação",
             modifier = Modifier.size(120.dp)
         )
 
-        // Texto "SuperID"
         Text(
             text = "SuperID",
-            style = MaterialTheme.typography.h3,
             fontSize = 32.sp
         )
+
         Spacer(modifier = Modifier.height(50.dp))
 
-        // Texto "Login"
         Text(
             text = "Login",
-            style = MaterialTheme.typography.h4,
             fontSize = 24.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
-            label = { Text("E-mail", fontSize = 18.sp) },
+            onValueChange = {email = it},
+            label = {Text("E-mail", fontSize = 18.sp)},
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -68,7 +60,7 @@ fun TelaLogin(navController: NavController) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Senha", fontSize = 18.sp) },
+            label = {Text("Senha", fontSize = 18.sp)},
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -76,7 +68,7 @@ fun TelaLogin(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* TODO: Implementar oq vem dps de login!!! */ },
+            onClick = {/* Implementar oq vem dps de login!!! */},
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
         ) {
@@ -84,10 +76,11 @@ fun TelaLogin(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
         Text(text = "Não possui cadastro ainda?", color = Color.Gray, fontSize = 16.sp)
 
         Button(
-            onClick = { navController.navigate("tela_cadastro") },
+            onClick = {navController.navigate("tela_cadastro")},
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
         ) {
@@ -99,7 +92,5 @@ fun TelaLogin(navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
-    TelaLogin(
-        navController = TODO()
-    )
+    TelaLogin(navController = TODO())
 }

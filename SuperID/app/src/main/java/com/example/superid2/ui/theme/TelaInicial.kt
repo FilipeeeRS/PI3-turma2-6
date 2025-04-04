@@ -22,14 +22,12 @@ fun TelaInicial(onContinuarClick: () -> Unit) {
         ) {
             Text(
                 text = "SuperID",
-                style = MaterialTheme.typography.headlineLarge,
                 fontSize = 32.sp
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "O que é o SuperID?",
-                style = MaterialTheme.typography.headlineMedium,
                 fontSize = 24.sp
             )
 
@@ -42,11 +40,8 @@ fun TelaInicial(onContinuarClick: () -> Unit) {
                         "- Login sem senha via QR Code\n" +
                         "- Recuperação de senha por email\n\n" +
                         "O sistema possui duas partes: um aplicativo Android para gestão de credenciais e uma integração web para login sem senha em sites parceiros.",
-                style = MaterialTheme.typography.bodyLarge,
                 fontSize = 18.sp
             )
-
-            Spacer(modifier = Modifier.weight(1f))
         }
 
         Button(
