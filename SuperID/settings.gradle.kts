@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SuperID2"
+rootProject.name = "SuperID"
 include(":app")
- 

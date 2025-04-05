@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">SuperID2</string>
-    <string name="title_activity_main_activitdasy2asd">MainActivitdasy2asd</string>
-    <string name="title_activity_main_activity2asd">MainActivity2asd</string>
+    <string name="app_name">SuperID</string>
+    <string name="title_activity_cadastro">CadastroActivity</string>
 </resources>
