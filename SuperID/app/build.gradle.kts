@@ -2,16 +2,15 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-
 }
 
 android {
-    namespace = "com.example.superid2"
+    namespace = "com.example.superid"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.superid2"
-        minSdk = 24
+        applicationId = "com.example.superid"
+        minSdk = 33
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -57,12 +56,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    //Compose
-    implementation("androidx.activity:activity-compose:1.8.0")
-    implementation("androidx.compose.ui:ui:1.5.0")
-    implementation("androidx.compose.material:material:1.5.0")
-
-    //Navegar
-    implementation("androidx.navigation:navigation-compose:2.7.5")
 }
