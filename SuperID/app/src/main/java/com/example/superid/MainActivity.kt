@@ -63,10 +63,11 @@ fun TelaInicial(modifier: Modifier = Modifier) {
             painter = painterResource(R.drawable.ic_launcher),
             contentDescription = "Logo"
         )
+        Spacer(modifier = modifier.height(48.dp))
 
         Text("Bem-vindo ao SuperID")
 
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(modifier = Modifier.height(64.dp))
 
         Button(onClick = { val intent = Intent(context, CadastroActivity::class.java)
             context.startActivity(intent)}, modifier = Modifier.fillMaxWidth()) {
@@ -76,7 +77,8 @@ fun TelaInicial(modifier: Modifier = Modifier) {
 
         Text("Já possui cadastro?")
 
-        Button(onClick = {/*TODO*/}, modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = {val intent = Intent(context,CadastroActivity::class.java)
+                         context.startActivity(intent)}, modifier = Modifier.fillMaxWidth()) {
             Text("Entrar")
         }
     }
