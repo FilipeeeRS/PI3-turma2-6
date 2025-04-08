@@ -1,61 +1,91 @@
 package com.example.superid
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.superid.ui.theme.SuperIDTheme
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
+import com.example.superid.ui.theme.SuperIDTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class CadastroActivity : ComponentActivity() {
+    private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
+    private lateinit var firestore: FirebaseFirestore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Inicializando o FirebaseAuth e o FirebaseFirestore
+        auth = FirebaseAuth.getInstance()
+        firestore = FirebaseFirestore.getInstance()
+
         setContent {
             SuperIDTheme {
-                TelaCadastro()
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    TelaCadastro(modifier = Modifier.padding(innerPadding)) { nome, email, senha ->
+                        cadastrarUsuario(nome, email, senha)
+                    }
+                }
             }
         }
     }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun CadastroPreview(){
-    SuperIDTheme{
-        TelaCadastro()
+    private fun cadastrarUsuario(nome: String, email: String, senha: String) {
+        // Criar o usuário no Firebase Authentication
+        auth.createUserWithEmailAndPassword(email, senha)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Obter o UID do usuário criado
+                    val uid = auth.currentUser?.uid
+                    if (uid != null) {
+                        val user = hashMapOf(
+                            "nome" to nome,
+                            "email" to email
+                        )
+
+                        // Salvar os dados do usuário no Firestore
+                        firestore.collection("users")
+                            .document(uid)
+                            .set(user)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    this,
+                                    "Conta criada com sucesso!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(
+                                    this,
+                                    "Erro ao salvar no Firestore: ${it.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                } else {
+                    Toast.makeText(
+                        this,
+                        "Erro ao criar conta: ${task.exception?.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
     }
 }
 
-
 @Composable
-fun TelaCadastro(modifier: Modifier = Modifier) {
+fun TelaCadastro(modifier: Modifier = Modifier, onCadastrarClick: (String, String, String) -> Unit) {
     var nome by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
@@ -103,10 +133,21 @@ fun TelaCadastro(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth()){
-            Text(text = "Criar")
+        Button(
+            onClick = {
+                onCadastrarClick(nome.trim(), email.trim(), senha.trim())
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Criar conta")
         }
     }
 }
 
-
+@Preview(showBackground = true)
+@Composable
+fun CadastroPreview() {
+    SuperIDTheme {
+        TelaCadastro { _, _, _ -> }
+    }
+}

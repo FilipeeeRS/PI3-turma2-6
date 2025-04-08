@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "397712673328",
+    "project_id": "pi3-turma2-6",
+    "storage_bucket": "pi3-turma2-6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397712673328:android:9d412c617526cd9464fbf5",
+        "android_client_info": {
+          "package_name": "com.example.superid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDHBQx5rIyO1zBNHmbBWfj9R1pX8kgGEg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
