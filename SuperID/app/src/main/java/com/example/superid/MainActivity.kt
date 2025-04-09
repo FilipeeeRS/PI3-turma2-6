@@ -77,7 +77,7 @@ fun TelaInicial(modifier: Modifier = Modifier) {
 
         Text("Já possui cadastro?")
 
-        Button(onClick = {val intent = Intent(context,CadastroActivity::class.java)
+        Button(onClick = {val intent = Intent(context,LoginActivity::class.java)
                          context.startActivity(intent)}, modifier = Modifier.fillMaxWidth()) {
             Text("Entrar")
         }

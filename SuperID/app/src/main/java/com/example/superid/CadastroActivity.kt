@@ -85,13 +85,20 @@ class CadastroActivity : ComponentActivity() {
 }
 
 @Composable
-fun TelaCadastro(modifier: Modifier = Modifier, onCadastrarClick: (String, String, String) -> Unit) {
+fun TelaCadastro(
+    modifier: Modifier = Modifier,
+    onCadastrarClick: (String, String, String) -> Unit
+) {
     var nome by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
+    var confirmarSenha by remember { mutableStateOf("") }
+    var erroConfirmacao by remember { mutableStateOf(false) }
 
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -126,16 +133,48 @@ fun TelaCadastro(modifier: Modifier = Modifier, onCadastrarClick: (String, Strin
 
         TextField(
             value = senha,
-            onValueChange = { senha = it },
+            onValueChange = {
+                senha = it
+                // resetar o erro se o usuário alterar a senha
+                if (erroConfirmacao) erroConfirmacao = false
+            },
             label = { Text("Digite a senha*") },
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextField(
+            value = confirmarSenha,
+            onValueChange = {
+                confirmarSenha = it
+                if (erroConfirmacao) erroConfirmacao = false
+            },
+            label = { Text("Confirme a senha*") },
+            isError = erroConfirmacao,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (erroConfirmacao) {
+            Text(
+                text = "As senhas não coincidem.",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(top = 4.dp, start = 4.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-                onCadastrarClick(nome.trim(), email.trim(), senha.trim())
+                if (senha != confirmarSenha) {
+                    erroConfirmacao = true
+                } else {
+                    erroConfirmacao = false
+                    onCadastrarClick(nome.trim(), email.trim(), senha.trim())
+                }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -143,6 +182,7 @@ fun TelaCadastro(modifier: Modifier = Modifier, onCadastrarClick: (String, Strin
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
