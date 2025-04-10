@@ -2,4 +2,5 @@
     <string name="app_name">SuperID</string>
     <string name="title_activity_cadastro">CadastroActivity</string>
     <string name="title_activity_login">LoginActivity</string>
+    <string name="title_activity_home">HomeActivity</string>
 </resources>

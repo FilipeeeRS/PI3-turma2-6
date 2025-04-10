@@ -1,5 +1,6 @@
 package com.example.superid
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -64,6 +65,9 @@ class CadastroActivity : ComponentActivity() {
                                     "Conta criada com sucesso!",
                                     Toast.LENGTH_SHORT
                                 ).show()
+                                val intent = Intent(this, HomeActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                startActivity(intent)
                             }
                             .addOnFailureListener {
                                 Toast.makeText(

@@ -1,5 +1,6 @@
 package com.example.superid
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -52,6 +53,9 @@ class LoginActivity : ComponentActivity() {
                     val uid = auth.currentUser?.uid
                     Log.i("AUTH-INFO", "Usuário autenticado: $uid")
                     Toast.makeText(this, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, HomeActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
                 } else {
                     // Falha no login
                     Log.e("AUTH-INFO", "Falha na autenticação: ${task.exception}")
