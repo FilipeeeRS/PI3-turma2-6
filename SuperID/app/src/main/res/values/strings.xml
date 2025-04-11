@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">SuperID</string>
-    <string name="title_activity_cadastro">CadastroActivity</string>
-    <string name="title_activity_login">LoginActivity</string>
-    <string name="title_activity_home">HomeActivity</string>
+    <string name="title_activity_cadastro">Cadastro</string>
+    <string name="title_activity_login">Login</string>
+    <string name="title_activity_home">Home</string>
+    <string name="title_activity_welcome">Welcome</string>
+    <string name="title_activity_main">MainActivity</string>
 </resources>

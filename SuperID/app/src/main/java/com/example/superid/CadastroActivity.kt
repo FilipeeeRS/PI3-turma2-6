@@ -12,9 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -113,7 +115,7 @@ fun TelaCadastro(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        Text("Registre-se")
+        Text("Registre-se", fontSize=30.sp)
 
         Spacer(modifier = Modifier.height(64.dp))
 
@@ -121,7 +123,7 @@ fun TelaCadastro(
             value = nome,
             onValueChange = { nome = it },
             label = { Text("Digite o nome*") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -130,7 +132,7 @@ fun TelaCadastro(
             value = email,
             onValueChange = { email = it },
             label = { Text("Digite o email*") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -143,7 +145,7 @@ fun TelaCadastro(
                 if (erroConfirmacao) erroConfirmacao = false
             },
             label = { Text("Digite a senha*") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -156,7 +158,7 @@ fun TelaCadastro(
             },
             label = { Text("Confirme a senha*") },
             isError = erroConfirmacao,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         if (erroConfirmacao) {
@@ -180,9 +182,10 @@ fun TelaCadastro(
                     onCadastrarClick(nome.trim(), email.trim(), senha.trim())
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(0.7f),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
         ) {
-            Text(text = "Criar conta")
+            Text(text = "Registrar", fontSize=24.sp)
         }
     }
 }

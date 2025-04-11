@@ -19,7 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -27,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
+
 
 class LoginActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
@@ -97,15 +101,15 @@ fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> U
 
         Spacer(modifier = modifier.height(48.dp))
 
-        Text("Acesse agora o SuperID")
+        Text("Acesse agora o SuperID", fontSize=30.sp)
 
         Spacer(modifier = modifier.height(64.dp))
 
         TextField(
             value = email,
             onValueChange = {email = it},
-            label = {Text("Digite o email")},
-            modifier = Modifier.fillMaxWidth()
+            label = {Text("Digite o email", fontSize=18.sp)},
+            modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         Spacer(modifier = modifier.height(16.dp))
@@ -113,14 +117,17 @@ fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> U
         TextField(
             value = senha,
             onValueChange = {senha = it},
-            label = { Text("Digite a senha") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Digite a senha", fontSize=18.sp) },
+            modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         Spacer(modifier = modifier.height(24.dp))
 
-        Button(onClick = { onLoginClick(email.trim(), senha.trim())}, modifier = modifier.fillMaxWidth() ) {
-            Text("Entrar")
+        Button(onClick = { onLoginClick(email.trim(), senha.trim())},
+            modifier = modifier.fillMaxWidth(0.7f),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+        ) {
+            Text("Entrar", fontSize=24.sp)
         }
     }
 }
