@@ -64,7 +64,7 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
             Image(
                 painter = painterResource(R.drawable.ic_launcher),
                 contentDescription = "Logo",
-                modifier = Modifier.size(50.dp).padding(start = 8.dp)
+                modifier = Modifier.size(50.dp)
             )
         }
 
@@ -85,10 +85,12 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
 
         Button(
             onClick = {
-                val intent = Intent(context, MainActivity::class.java)
+                val intent = Intent(context, TermsActivity::class.java)
                 context.startActivity(intent)
+                (context as? ComponentActivity)?.finish()
             },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 50.dp),
+            modifier = Modifier.fillMaxWidth()
+                .padding(bottom = 50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
         ) {
             Text("OK", fontSize = 24.sp)
