@@ -7,9 +7,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
@@ -59,6 +69,14 @@ class HomeActivity : ComponentActivity() {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun HomePreview() {
+    SuperIDTheme {
+        HomeScreen()
+    }
+}
+
 @Composable
 fun UserInfoScreen(userData: Map<String, String>) {
     Column(
@@ -74,4 +92,64 @@ fun UserInfoScreen(userData: Map<String, String>) {
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen() {
+    var presses by remember { mutableIntStateOf(0) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("SuperID")
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Secure",
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = {/*TODO*/ }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {/*TODO*/ }) {
+                        Icon(Icons.Default.Search, contentDescription = "Busca")
+                    }
+                }
+            )
+
+        },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = true,
+                    onClick = {/*TODO*/ },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Início") },
+                    label = { Text("Início") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = {/*TODO*/ },
+                    icon = { Icon(Icons.Default.VpnKey, contentDescription = "Senhas") },
+                    label = { Text("Senhas") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { /*TODO*/ },
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
+                    label = { Text("Perfil") }
+                )
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {/*TODO*/ }) {
+                Icon(Icons.Default.Add, contentDescription = "Adicionar Conta")
+            }
+        }
+    ){}
 }
