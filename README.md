@@ -5,7 +5,7 @@ Integrantes:
 - Isaac Vitor Silva Bertonha
 - João Masayuki Kobata
 - Filipe Ribeiro Simões
-- Marcos Antônio Vlaério Filho
+- Marcos Antônio Valério Filho
 - Pedro Facine Nery
   
 Orientadores:
