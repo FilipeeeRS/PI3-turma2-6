@@ -20,10 +20,19 @@ import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation.Companion.None
+import android.provider.Settings
+
+
 
 class CadastroActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,19 +54,21 @@ class CadastroActivity : ComponentActivity() {
     }
 
     private fun cadastrarUsuario(nome: String, email: String, senha: String) {
-        // Criar o usuário no Firebase Authentication
         auth.createUserWithEmailAndPassword(email, senha)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Obter o UID do usuário criado
                     val uid = auth.currentUser?.uid
                     if (uid != null) {
+                        // Pegando o ID do dispositivo (Android ID)
+                        val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+
                         val user = hashMapOf(
                             "nome" to nome,
-                            "email" to email
+                            "email" to email,
+                            "uid" to uid,
+                            "deviceId" to deviceId // <--- salvando deviceId (como IMEI equivalente)
                         )
 
-                        // Salvar os dados do usuário no Firestore
                         firestore.collection("users")
                             .document(uid)
                             .set(user)
@@ -88,6 +99,7 @@ class CadastroActivity : ComponentActivity() {
                 }
             }
     }
+
 }
 
 @Composable
@@ -100,6 +112,9 @@ fun TelaCadastro(
     var senha by remember { mutableStateOf("") }
     var confirmarSenha by remember { mutableStateOf("") }
     var erroConfirmacao by remember { mutableStateOf(false) }
+
+    var senhaVisivel by remember { mutableStateOf(false) }
+    var confirmarSenhaVisivel by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -115,7 +130,7 @@ fun TelaCadastro(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        Text("Registre-se", fontSize=30.sp)
+        Text("Registre-se", fontSize = 30.sp)
 
         Spacer(modifier = Modifier.height(64.dp))
 
@@ -137,19 +152,30 @@ fun TelaCadastro(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Campo de senha
         TextField(
             value = senha,
             onValueChange = {
                 senha = it
-                // resetar o erro se o usuário alterar a senha
                 if (erroConfirmacao) erroConfirmacao = false
             },
             label = { Text("Digite a senha*") },
-            modifier = Modifier.fillMaxWidth(0.85f)
+            modifier = Modifier.fillMaxWidth(0.85f),
+            visualTransformation = if (senhaVisivel) None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
+                    Icon(
+                        imageVector = if (senhaVisivel) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Mostrar senha",
+                        tint = Color.Gray
+                    )
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Campo de confirmar senha
         TextField(
             value = confirmarSenha,
             onValueChange = {
@@ -158,7 +184,17 @@ fun TelaCadastro(
             },
             label = { Text("Confirme a senha*") },
             isError = erroConfirmacao,
-            modifier = Modifier.fillMaxWidth(0.85f)
+            modifier = Modifier.fillMaxWidth(0.85f),
+            visualTransformation = if (confirmarSenhaVisivel) None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { confirmarSenhaVisivel = !confirmarSenhaVisivel }) {
+                    Icon(
+                        imageVector = if (confirmarSenhaVisivel) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Mostrar confirmação de senha",
+                        tint = Color.Gray
+                    )
+                }
+            }
         )
 
         if (erroConfirmacao) {
@@ -185,10 +221,11 @@ fun TelaCadastro(
             modifier = Modifier.fillMaxWidth(0.7f),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
         ) {
-            Text(text = "Registrar", fontSize=24.sp)
+            Text(text = "Registrar", fontSize = 24.sp)
         }
     }
 }
+
 
 
 @Preview(showBackground = true)

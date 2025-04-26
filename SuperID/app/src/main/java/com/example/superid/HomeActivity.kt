@@ -40,30 +40,8 @@ class HomeActivity : ComponentActivity() {
 
         setContent {
             SuperIDTheme {
-                var userInfo by remember { mutableStateOf<Map<String, String>?>(null) }
+                HomeScreen()
 
-                LaunchedEffect(uid) {
-                    uid?.let {
-                        firestore.collection("users").document(it).get()
-                            .addOnSuccessListener { doc ->
-                                if (doc.exists()) {
-                                    val data = doc.data?.mapValues { it.value.toString() } ?: emptyMap()
-                                    userInfo = data
-                                } else {
-                                    Toast.makeText(this@HomeActivity, "Usuário não encontrado no Firestore", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                            .addOnFailureListener {
-                                Toast.makeText(this@HomeActivity, "Erro ao buscar dados: ${it.message}", Toast.LENGTH_SHORT).show()
-                            }
-                    }
-                }
-
-                if (userInfo != null) {
-                    UserInfoScreen(userInfo!!)
-                } else {
-                    Text("Carregando dados...")
-                }
             }
         }
     }
@@ -108,7 +86,7 @@ fun HomeScreen() {
                             imageVector = Icons.Default.Lock,
                             contentDescription = "Secure",
                             modifier = Modifier.padding(start = 8.dp)
-                        )
+                        )  
                     }
                 },
                 navigationIcon = {

@@ -8,31 +8,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
-
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation.Companion.None
 
 class LoginActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
@@ -47,7 +39,6 @@ class LoginActivity : ComponentActivity() {
             }
         }
     }
-
 
     private fun loginUser(email: String, senha: String) {
         auth.signInWithEmailAndPassword(email, senha)
@@ -73,20 +64,19 @@ class LoginActivity : ComponentActivity() {
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun LoginPreview() {
     SuperIDTheme {
-        TelaLogin{ _, _ ->}
+        TelaLogin { _, _ ->}
     }
 }
 
-
 @Composable
-fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> Unit ) {
+fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> Unit) {
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
+    var senhaVisivel by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -101,33 +91,45 @@ fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> U
 
         Spacer(modifier = modifier.height(48.dp))
 
-        Text("Acesse agora o SuperID", fontSize=30.sp)
+        Text("Acesse agora o SuperID", fontSize = 30.sp)
 
         Spacer(modifier = modifier.height(64.dp))
 
         TextField(
             value = email,
-            onValueChange = {email = it},
-            label = {Text("Digite o email", fontSize=18.sp)},
+            onValueChange = { email = it },
+            label = { Text("Digite o email", fontSize = 18.sp) },
             modifier = Modifier.fillMaxWidth(0.85f)
         )
 
         Spacer(modifier = modifier.height(16.dp))
 
+        // Campo de senha com visibilidade alternada
         TextField(
             value = senha,
-            onValueChange = {senha = it},
-            label = { Text("Digite a senha", fontSize=18.sp) },
-            modifier = Modifier.fillMaxWidth(0.85f)
+            onValueChange = { senha = it },
+            label = { Text("Digite a senha", fontSize = 18.sp) },
+            modifier = Modifier.fillMaxWidth(0.85f),
+            visualTransformation = if (senhaVisivel) None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
+                    Icon(
+                        imageVector = if (senhaVisivel) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                        contentDescription = "Mostrar senha",
+                        tint = Color.Gray
+                    )
+                }
+            }
         )
 
         Spacer(modifier = modifier.height(24.dp))
 
-        Button(onClick = { onLoginClick(email.trim(), senha.trim())},
+        Button(
+            onClick = { onLoginClick(email.trim(), senha.trim()) },
             modifier = modifier.fillMaxWidth(0.7f),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
         ) {
-            Text("Entrar", fontSize=24.sp)
+            Text("Entrar", fontSize = 24.sp)
         }
     }
 }
