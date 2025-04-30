@@ -90,7 +90,7 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
                 (context as? ComponentActivity)?.finish()
             },
             modifier = Modifier.fillMaxWidth()
-                .padding(bottom = 50.dp),
+                .padding(bottom = 20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
         ) {
             Text("OK", fontSize = 24.sp)
