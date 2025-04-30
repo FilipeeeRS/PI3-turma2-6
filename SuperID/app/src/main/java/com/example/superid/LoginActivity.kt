@@ -23,8 +23,12 @@ import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation.Companion.None
+import androidx.compose.ui.text.style.TextDecoration
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 class LoginActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
@@ -63,6 +67,77 @@ class LoginActivity : ComponentActivity() {
             }
     }
 }
+// Envia email para redefinir senha
+fun sendPasswordReset(email: String, onResult: (String) -> Unit) {
+    val auth = Firebase.auth
+
+    // Tentativa de login com senha inválida só pra puxar o user
+    auth.signInWithEmailAndPassword(email, "123")
+        .addOnCompleteListener { task ->
+            val exception = task.exception
+            val user = auth.currentUser
+
+            if (task.isSuccessful || exception?.message?.contains("The password is invalid") == true) {
+                // Verifica se o email está verificado
+                if (user != null && user.isEmailVerified) {
+                    auth.sendPasswordResetEmail(email)
+                        .addOnCompleteListener { resetTask ->
+                            if (resetTask.isSuccessful) {
+                                onResult("E-mail de redefinição enviado com êxito!")
+                            } else {
+                                onResult("Falha ao enviar e-mail.")
+                            }
+                        }
+                }
+            } else {
+                val errorMessage = when ((exception as? com.google.firebase.auth.FirebaseAuthException)?.errorCode) {
+                    "ERROR_USER_NOT_FOUND" -> "Usuário não encontrado."
+                    "ERROR_INVALID_EMAIL" -> "E-mail inválido."
+                    else -> "E-mail não verificado."
+                }
+                onResult(errorMessage)
+            }
+        }
+}
+
+
+// AlertDialog quando clicado "Esqueci minha senha"
+@Composable
+fun ForgotPasswordDialog(
+    onDismiss: () -> Unit,
+    onSend: (String) -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Redefinir senha") },
+        text = {
+            Column {
+                Text("Digite seu e-mail para receber o link de redefinição.")
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("E-mail") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSend(email)
+                onDismiss()
+            }) {
+                Text("Enviar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onDismiss() }) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
 
 @Preview(showBackground = true)
 @Composable
@@ -77,6 +152,10 @@ fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> U
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
+    var dialogoEsqueceuSenha by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+   
+
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -124,12 +203,40 @@ fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> U
 
         Spacer(modifier = modifier.height(24.dp))
 
+        TextButton(onClick = { dialogoEsqueceuSenha = true }) {
+            Text("Esqueceu sua senha?", color = Color.Black, style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline))
+        }
+
+
+        Spacer(modifier = Modifier.height(1.dp))
+
+       TextButton(
+            onClick = {
+                val intent = Intent(context, CadastroActivity::class.java)
+                context.startActivity(intent)
+            }
+        ) {
+            Text("Não possui conta? ", color = Color.Black)
+            Text("Cadastre-se agora", color = Color.Black, style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline))
+        }
+
         Button(
             onClick = { onLoginClick(email.trim(), senha.trim()) },
             modifier = modifier.fillMaxWidth(0.7f),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
         ) {
             Text("Entrar", fontSize = 24.sp)
+        }
+        // Abre o Dialog para digitar o email
+        if (dialogoEsqueceuSenha) {
+            ForgotPasswordDialog(
+                onDismiss = { dialogoEsqueceuSenha = false },
+                onSend = { email ->
+                    sendPasswordReset(email) { result ->
+                        Toast.makeText(context, result, Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
         }
     }
 }
