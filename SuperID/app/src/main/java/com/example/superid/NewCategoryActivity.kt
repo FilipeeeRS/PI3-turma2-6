@@ -87,7 +87,7 @@ fun NewCategoryScreen(
                 TextField(
                     value = nomeCategoria,
                     onValueChange = { nomeCategoria = it },
-                    label = { Text("Nome da categoria:", fontSize = 18.sp) },
+                    label = { Text("Nome da categoria", fontSize = 18.sp) },
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
 
@@ -95,7 +95,7 @@ fun NewCategoryScreen(
 
                 if (showError) {
                     Text(
-                        text = "ERRO: categoria já existe.",
+                        text = "ERRO: Categoria já existe.",
                         color = Color.Red,
                         modifier = Modifier
                             .padding(top = 8.dp)
@@ -112,7 +112,7 @@ fun NewCategoryScreen(
                         .padding(bottom = 50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                 ) {
-                    Text("adicionar", fontSize = 24.sp)
+                    Text("Adicionar", fontSize = 24.sp)
                 }
             }
         }
