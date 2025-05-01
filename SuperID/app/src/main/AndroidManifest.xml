@@ -18,14 +18,14 @@
             android:label="@string/title_activity_cadastro"
             android:theme="@style/Theme.SuperID" />
         <activity
-            android:name=".TermsActivity"
+            android:name=".HomeActivity"
             android:exported="false"
-            android:label="@string/title_activity_termos"
+            android:label="@string/title_activity_cadastro"
             android:theme="@style/Theme.SuperID" />
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".LoginActivity"
             android:exported="true"
-            android:label="@string/title_activity_welcome"
+            android:label="@string/app_name"
             android:theme="@style/Theme.SuperID">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,21 +33,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false"
-            android:label="@string/title_activity_home"
-            android:theme="@style/Theme.SuperID" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false"
-            android:label="@string/title_activity_login"
-            android:theme="@style/Theme.SuperID" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="false"
-            android:label="@string/title_activity_main"
-            android:theme="@style/Theme.SuperID" />
     </application>
 
 </manifest>

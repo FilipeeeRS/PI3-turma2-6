@@ -8,7 +8,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +25,7 @@ import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation.Companion.None
@@ -111,10 +114,10 @@ fun ForgotPasswordDialog(
 
     AlertDialog(
         onDismissRequest = { onDismiss() },
-        title = { Text("Redefinir senha") },
+        title = { Text("Recuperação de senha") },
         text = {
             Column {
-                Text("Digite seu e-mail para receber o link de redefinição.")
+                Text("Digite o e-mail para envio do link de redefinição de senha.")
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = email,
@@ -148,95 +151,146 @@ fun LoginPreview() {
 }
 
 @Composable
-fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> Unit) {
+fun TelaLogin(
+    modifier: Modifier = Modifier,
+    onLoginClick: (String, String) -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
     var dialogoEsqueceuSenha by remember { mutableStateOf(false) }
     val context = LocalContext.current
-   
+    val azulPrimario = Color(0xFF1E88E5)
 
-
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
     ) {
+        // Plano de fundo
+        //Image(
+           // painter = painterResource(id = R.drawable.), // FALTA AQUI
+           // contentDescription = "Plano de fundo",
+           // modifier = Modifier.fillMaxSize(),
+           // contentScale = ContentScale.Crop
+       // )
 
-        Image(
-            painter = painterResource(R.drawable.ic_launcher),
-            contentDescription = "Logo"
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f))
         )
 
-        Spacer(modifier = modifier.height(48.dp))
-
-        Text("Acesse agora o SuperID", fontSize = 30.sp)
-
-        Spacer(modifier = modifier.height(64.dp))
-
-        TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Digite o email", fontSize = 18.sp) },
-            modifier = Modifier.fillMaxWidth(0.85f)
-        )
-
-        Spacer(modifier = modifier.height(16.dp))
-
-        // Campo de senha com visibilidade alternada
-        TextField(
-            value = senha,
-            onValueChange = { senha = it },
-            label = { Text("Digite a senha", fontSize = 18.sp) },
-            modifier = Modifier.fillMaxWidth(0.85f),
-            visualTransformation = if (senhaVisivel) None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
-                    Icon(
-                        imageVector = if (senhaVisivel) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                        contentDescription = "Mostrar senha",
-                        tint = Color.Gray
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(10.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher),
+                        contentDescription = "Logo",
+                        modifier = Modifier.size(80.dp)
                     )
-                }
-            }
-        )
 
-        Spacer(modifier = modifier.height(24.dp))
+                    Text(
+                        text = "Bem-vindo ao SuperID",
+                        fontSize = 24.sp,
+                        color = azulPrimario
+                    )
 
-        TextButton(onClick = { dialogoEsqueceuSenha = true }) {
-            Text("Esqueceu sua senha?", color = Color.Black, style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline))
-        }
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("E-mail") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
+                    )
 
+                    OutlinedTextField(
+                        value = senha,
+                        onValueChange = { senha = it },
+                        label = { Text("Senha") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        visualTransformation = if (senhaVisivel) None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
+                                Icon(
+                                    imageVector = if (senhaVisivel) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    contentDescription = "Mostrar senha",
+                                    tint = azulPrimario
+                                )
+                            }
+                        }
+                    )
 
-        Spacer(modifier = Modifier.height(1.dp))
+                    TextButton(onClick = { dialogoEsqueceuSenha = true }) {
+                        Text(
+                            "Esqueceu sua senha?",
+                            color = azulPrimario,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    }
 
-       TextButton(
-            onClick = {
-                val intent = Intent(context, CadastroActivity::class.java)
-                context.startActivity(intent)
-            }
-        ) {
-            Text("Não possui conta? ", color = Color.Black)
-            Text("Cadastre-se agora", color = Color.Black, style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline))
-        }
+                    Button(
+                        onClick = { onLoginClick(email.trim(), senha.trim()) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = azulPrimario)
+                    ) {
+                        Text("Entrar", fontSize = 18.sp, color = Color.White)
+                    }
 
-        Button(
-            onClick = { onLoginClick(email.trim(), senha.trim()) },
-            modifier = modifier.fillMaxWidth(0.7f),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-        ) {
-            Text("Entrar", fontSize = 24.sp)
-        }
-        // Abre o Dialog para digitar o email
-        if (dialogoEsqueceuSenha) {
-            ForgotPasswordDialog(
-                onDismiss = { dialogoEsqueceuSenha = false },
-                onSend = { email ->
-                    sendPasswordReset(email) { result ->
-                        Toast.makeText(context, result, Toast.LENGTH_LONG).show()
+                    Row {
+                        Text("Não possui conta?", color = Color.Gray)
+                        Spacer(modifier = Modifier.width(0.dp))
+                        TextButton(
+                            onClick = {
+                                val intent = Intent(context, CadastroActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                        ) {
+                            Text(
+                                "Cadastre-se agora",
+                                color = azulPrimario,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        }
                     }
                 }
-            )
+            }
+
+            // Diálogo para recuperação de senha
+            if (dialogoEsqueceuSenha) {
+                ForgotPasswordDialog(
+                    onDismiss = { dialogoEsqueceuSenha = false },
+                    onSend = { emailDigitado ->
+                        sendPasswordReset(emailDigitado) { resultado ->
+                            Toast.makeText(context, resultado, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
         }
     }
 }
