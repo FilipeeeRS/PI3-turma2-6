@@ -89,11 +89,6 @@ fun HomeScreen() {
                         )
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
             )
         },
         bottomBar = {
@@ -103,12 +98,6 @@ fun HomeScreen() {
                     onClick = { /* TODO */ },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Início") },
                     label = { Text("Início") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { /* TODO */ },
-                    icon = { Icon(Icons.Default.VpnKey, contentDescription = "Senhas") },
-                    label = { Text("Senhas") }
                 )
                 NavigationBarItem(
                     selected = false,

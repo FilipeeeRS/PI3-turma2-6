@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation.Companion.None
 import android.provider.Settings
-
+import androidx.core.content.ContextCompat.startActivity
 
 
 class CadastroActivity : ComponentActivity() {
@@ -225,8 +225,6 @@ fun TelaCadastro(
         }
     }
 }
-
-
 
 @Preview(showBackground = true)
 @Composable
