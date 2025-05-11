@@ -50,7 +50,6 @@ class NewPasswordActivity : ComponentActivity() {
     }
 }
 
-// Gera accessToken Base64 com 256 caracteres
 fun gerarAccessToken(): String {
     val random = SecureRandom()
     val bytes = ByteArray(192) // 192 bytes ≈ 256 base64 chars
@@ -58,7 +57,6 @@ fun gerarAccessToken(): String {
     return Base64.encodeToString(bytes, Base64.NO_WRAP)
 }
 
-// Criptografa a senha usando AES
 fun criptografarSenha(senha: String): String {
     val chave = "criptografia2025" // chave AES de 16 bytes
     val secretKey = SecretKeySpec(chave.toByteArray(), "AES")
@@ -68,7 +66,6 @@ fun criptografarSenha(senha: String): String {
     return Base64.encodeToString(encrypted, Base64.NO_WRAP)
 }
 
-// Salva senha criptografada no Firestore
 fun salvarNovaSenha(
     categoria: String,
     email: String,
@@ -118,12 +115,36 @@ fun NewPasswordScreen(
     onBack: () -> Unit = {},
     showError: Boolean = false
 ) {
-    var categoria by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var nomeConta by remember { mutableStateOf("") }
+    var categoria by remember { mutableStateOf("Selecione uma categoria") }
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
-    var nomeConta by remember { mutableStateOf("") }
-    val context = LocalContext.current
+
+    var expanded by remember { mutableStateOf(false) }
+    var categoryList by remember {
+        mutableStateOf(
+            listOf("Sites Web", "Aplicativos", "Teclados de Acesso Físico")
+        )
+    }
+
+    // Carregar categorias dinâmicas
+    LaunchedEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            FirebaseFirestore.getInstance()
+                .collection("users").document(uid).collection("categories")
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        Toast.makeText(context, "Erro ao carregar categorias", Toast.LENGTH_SHORT).show()
+                        return@addSnapshotListener
+                    }
+                    val dynamicCategories = snapshots?.documents?.mapNotNull { it.getString("nome") } ?: emptyList()
+                    categoryList = listOf("Sites Web", "Aplicativos", "Teclados de Acesso Físico") + dynamicCategories
+                }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -167,12 +188,37 @@ fun NewPasswordScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TextField(
-                    value = categoria,
-                    onValueChange = { categoria = it },
-                    label = { Text("Categoria", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
+                // Dropdown de categorias estilizado como TextField
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth(0.85f) // <<< garante largura igual
+                ) {
+                    TextField(
+                        value = categoria,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Categoria", fontSize = 18.sp) },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categoryList.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text(selectionOption) },
+                                onClick = {
+                                    categoria = selectionOption
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
