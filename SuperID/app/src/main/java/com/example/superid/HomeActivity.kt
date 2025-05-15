@@ -2,10 +2,10 @@ package com.example.superid
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -74,49 +73,40 @@ fun UserInfoScreen(userData: Map<String, String>) {
 fun HomeScreen() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("categorias") }
+    var selectedCategory by remember { mutableStateOf("Categorias") }
+
+    val colorScheme = MaterialTheme.colorScheme
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("SuperID")
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Secure",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "SuperID",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = colorScheme.onPrimary
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Secure",
+                                modifier = Modifier.padding(start = 8.dp),
+                                tint = colorScheme.onPrimary
+                            )
+                        }
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.primary,
+                    titleContentColor = colorScheme.onPrimary
+                )
             )
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { /* TODO */ },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Início") },
-                    label = { Text("Início") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { /* TODO */ },
-                    icon = { Icon(Icons.Default.VpnKey, contentDescription = "Senhas") },
-                    label = { Text("Senhas") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { /* TODO */ },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
-                    label = { Text("Perfil") }
-                )
-            }
         },
 
         floatingActionButton = {
@@ -130,7 +120,9 @@ fun HomeScreen() {
                     onClick = {
                         val intent = Intent(context, QRCodeActivity::class.java)
                         context.startActivity(intent)
-                    }
+                    },
+                    containerColor = colorScheme.primary,
+                    contentColor = colorScheme.onPrimary
                 ) {
                     Text("QR")
                 }
@@ -139,7 +131,9 @@ fun HomeScreen() {
                     onClick = {
                         val intent = Intent(context, NewPasswordActivity::class.java)
                         context.startActivity(intent)
-                    }
+                    },
+                    containerColor = colorScheme.primary,
+                    contentColor = colorScheme.onPrimary
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Adicionar Conta")
                 }
@@ -150,9 +144,10 @@ fun HomeScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .padding(paddingValues)
+                .background(colorScheme.background)
         ) {
-            Divider(thickness = 10.dp)
+            Divider(thickness = 10.dp, color = colorScheme.surface)
 
             Row(
                 modifier = Modifier
@@ -164,23 +159,31 @@ fun HomeScreen() {
                 Text(
                     text = "Suas Contas",
                     fontSize = 20.sp,
+                    color = colorScheme.onBackground
                 )
 
                 Box {
                     TextButton(onClick = { expanded = true }) {
-                        Text(selectedCategory, fontSize = 20.sp)
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        Text(selectedCategory, fontSize = 20.sp, color = colorScheme.onBackground)
+                        Icon(
+                            Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = colorScheme.onBackground
+                        )
                     }
 
                     DropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(colorScheme.surface)
                     ) {
                         val categories = listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
 
                         categories.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(category) },
+                                text = {
+                                    Text(category, color = colorScheme.onSurface)
+                                },
                                 onClick = {
                                     selectedCategory = category
                                     expanded = false
@@ -188,14 +191,18 @@ fun HomeScreen() {
                             )
                         }
 
-                        Divider()
+                        Divider(color = colorScheme.outline)
 
                         DropdownMenuItem(
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Add, contentDescription = "Adicionar")
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Adicionar",
+                                        tint = colorScheme.onSurface
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Adicionar categoria")
+                                    Text("Adicionar categoria", color = colorScheme.onSurface)
                                 }
                             },
                             onClick = {
@@ -212,3 +219,4 @@ fun HomeScreen() {
         }
     }
 }
+

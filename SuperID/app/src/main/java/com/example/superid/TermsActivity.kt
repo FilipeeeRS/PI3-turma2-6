@@ -41,32 +41,43 @@ fun TermsScreenPreview() {
 @Composable
 fun TermsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
+            .background(colorScheme.background)
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .padding(32.dp)
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "Ao usar este aplicativo, você concorda com nossos termos de uso:\n\n" +
-                            "- Uso responsável das suas credenciais\n" +
+                    "Ao usar este aplicativo, você concorda com nossos termos de uso:",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    "- Uso responsável das suas credenciais\n" +
                             "- Login sem senha via QR Code\n" +
                             "- Recuperação de senha via e-mail\n\n" +
                             "Não compartilhamos seus dados com terceiros.",
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colorScheme.onSurface,
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -78,11 +89,14 @@ fun TermsScreen(modifier: Modifier = Modifier) {
                         },
                         modifier = Modifier
                             .weight(1f)
-                            .padding(end = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                        contentPadding = PaddingValues(vertical = 12.dp)
+                            .padding(end = 8.dp)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary
+                        )
                     ) {
-                        Text("Recusar", fontSize = 22.sp)
+                        Text("Recusar", fontSize = 18.sp)
                     }
 
                     Button(
@@ -93,14 +107,18 @@ fun TermsScreen(modifier: Modifier = Modifier) {
                         },
                         modifier = Modifier
                             .weight(1f)
-                            .padding(start = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                        contentPadding = PaddingValues(vertical = 12.dp)
+                            .padding(start = 8.dp)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary
+                        )
                     ) {
-                        Text("Aceitar", fontSize = 22.sp)
+                        Text("Aceitar", fontSize = 18.sp)
                     }
                 }
             }
         }
     }
 }
+

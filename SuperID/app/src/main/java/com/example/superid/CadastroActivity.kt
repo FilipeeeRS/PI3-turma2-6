@@ -26,7 +26,12 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation.Companion.None
 import android.provider.Settings
-
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 
 
 class CadastroActivity : ComponentActivity() {
@@ -112,119 +117,190 @@ fun TelaCadastro(
     var senha by remember { mutableStateOf("") }
     var confirmarSenha by remember { mutableStateOf("") }
     var erroConfirmacao by remember { mutableStateOf(false) }
-
     var senhaVisivel by remember { mutableStateOf(false) }
     var confirmarSenhaVisivel by remember { mutableStateOf(false) }
 
-    Column(
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(colorScheme.background)
+            .padding(24.dp)
     ) {
-        Image(
-            painter = painterResource(R.drawable.ic_launcher),
-            contentDescription = "Logo"
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Text("Registre-se", fontSize = 30.sp)
-
-        Spacer(modifier = Modifier.height(64.dp))
-
-        TextField(
-            value = nome,
-            onValueChange = { nome = it },
-            label = { Text("Digite o nome*") },
-            modifier = Modifier.fillMaxWidth(0.85f)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Digite o email*") },
-            modifier = Modifier.fillMaxWidth(0.85f)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Campo de senha
-        TextField(
-            value = senha,
-            onValueChange = {
-                senha = it
-                if (erroConfirmacao) erroConfirmacao = false
-            },
-            label = { Text("Digite a senha*") },
-            modifier = Modifier.fillMaxWidth(0.85f),
-            visualTransformation = if (senhaVisivel) None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
-                    Icon(
-                        imageVector = if (senhaVisivel) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = "Mostrar senha",
-                        tint = Color.Gray
-                    )
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Campo de confirmar senha
-        TextField(
-            value = confirmarSenha,
-            onValueChange = {
-                confirmarSenha = it
-                if (erroConfirmacao) erroConfirmacao = false
-            },
-            label = { Text("Confirme a senha*") },
-            isError = erroConfirmacao,
-            modifier = Modifier.fillMaxWidth(0.85f),
-            visualTransformation = if (confirmarSenhaVisivel) None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { confirmarSenhaVisivel = !confirmarSenhaVisivel }) {
-                    Icon(
-                        imageVector = if (confirmarSenhaVisivel) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = "Mostrar confirmação de senha",
-                        tint = Color.Gray
-                    )
-                }
-            }
-        )
-
-        if (erroConfirmacao) {
-            Text(
-                text = "As senhas não coincidem.",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(top = 4.dp, start = 4.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                if (senha != confirmarSenha) {
-                    erroConfirmacao = true
-                } else {
-                    erroConfirmacao = false
-                    onCadastrarClick(nome.trim(), email.trim(), senha.trim())
-                }
-            },
-            modifier = Modifier.fillMaxWidth(0.7f),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+            shape = MaterialTheme.shapes.medium,
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
         ) {
-            Text(text = "Registrar", fontSize = 24.sp)
+            Column(
+                modifier = Modifier.padding(32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .shadow(8.dp, MaterialTheme.shapes.small)
+                )
+
+                Text(
+                    text = "Crie sua conta",
+                    style = typography.titleLarge.copy(color = colorScheme.primary)
+                )
+
+                OutlinedTextField(
+                    value = nome,
+                    onValueChange = { nome = it },
+                    label = { Text("Nome", style = typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        cursorColor = colorScheme.primary
+                    )
+                )
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("E-mail", style = typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        cursorColor = colorScheme.primary
+                    )
+                )
+
+                OutlinedTextField(
+                    value = senha,
+                    onValueChange = {
+                        senha = it
+                        erroConfirmacao = false
+                    },
+                    label = { Text("Senha", style = typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    visualTransformation = if (senhaVisivel) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
+                            Icon(
+                                imageVector = if (senhaVisivel) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = "Mostrar senha",
+                                tint = colorScheme.primary
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        cursorColor = colorScheme.primary
+                    )
+                )
+
+                OutlinedTextField(
+                    value = confirmarSenha,
+                    onValueChange = {
+                        confirmarSenha = it
+                        erroConfirmacao = false
+                    },
+                    label = { Text("Confirme a senha", style = typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = erroConfirmacao,
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    visualTransformation = if (confirmarSenhaVisivel) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { confirmarSenhaVisivel = !confirmarSenhaVisivel }) {
+                            Icon(
+                                imageVector = if (confirmarSenhaVisivel) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = "Mostrar confirmação",
+                                tint = colorScheme.primary
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        cursorColor = colorScheme.primary,
+                        errorBorderColor = colorScheme.error
+                    )
+                )
+
+                if (erroConfirmacao) {
+                    Text(
+                        text = "As senhas não coincidem.",
+                        style = typography.bodySmall.copy(color = colorScheme.error)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (senha != confirmarSenha) {
+                            erroConfirmacao = true
+                        } else {
+                            onCadastrarClick(nome.trim(), email.trim(), senha.trim())
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
+                ) {
+                    Text(
+                        "Registrar",
+                        style = typography.titleMedium.copy(color = colorScheme.onPrimary)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    "Já possui conta?",
+                    style = typography.bodySmall.copy(color = colorScheme.onSurfaceVariant)
+                )
+
+                TextButton(onClick = {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    context.startActivity(intent)
+                }) {
+                    Text(
+                        "Entrar",
+                        style = typography.bodySmall.copy(
+                            color = colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    )
+                }
+            }
         }
     }
 }
+
+
+
 
 
 

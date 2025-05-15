@@ -5,7 +5,9 @@ package com.example.superid
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,29 +60,41 @@ fun NewPasswordScreen(
     var descricao by remember { mutableStateOf("") }
     var nomeConta by remember { mutableStateOf("") }
 
+    val colorScheme = MaterialTheme.colorScheme
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("SuperID")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "SuperID",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = colorScheme.onPrimary
+                        )
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = "Secure",
-                            modifier = Modifier.padding(start = 8.dp)
+                            modifier = Modifier.padding(start = 8.dp),
+                            tint = colorScheme.onPrimary
                         )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = colorScheme.onPrimary
+                        )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Busca")
-                    }
-                }
+
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = colorScheme.primary
+                )
             )
         },
         content = { paddingValues ->
@@ -87,67 +102,106 @@ fun NewPasswordScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Adicionar nova senha", fontSize = 30.sp)
+
+                Text(
+                    text = "Adicionar nova senha",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = colorScheme.onBackground
+                )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                TextField(
-                    value = nomeConta,
-                    onValueChange = { nomeConta = it },
-                    label = { Text("Nome da “senha”:", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
+                // Wrapper com fundo claro e bordas arredondadas para os TextFields
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TextField(
+                        value = nomeConta,
+                        onValueChange = { nomeConta = it },
+                        label = { Text("Nome da senha", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        )
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
+                    TextField(
+                        value = categoria,
+                        onValueChange = { categoria = it },
+                        label = { Text("Categoria", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        )
+                    )
 
-                TextField(
-                    value = categoria,
-                    onValueChange = { categoria = it },
-                    label = { Text("Categoria:", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Digite o email", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        ),
+                    )
 
-                TextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Digite o email", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = senha,
+                        onValueChange = { senha = it },
+                        label = { Text("Senha", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        ),
+                    )
 
-                TextField(
-                    value = senha,
-                    onValueChange = { senha = it },
-                    label = { Text("Senha:", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextField(
-                    value = descricao,
-                    onValueChange = { descricao = it },
-                    label = { Text("Descrição:", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = descricao,
+                        onValueChange = { descricao = it },
+                        label = { Text("Descrição", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        ),
+                    )
+                }
 
                 if (showError) {
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "ERRO: nome já existe.",
-                        color = Color.Red,
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .fillMaxWidth(0.85f)
+                        color = colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
@@ -157,10 +211,15 @@ fun NewPasswordScreen(
                     onClick = onAdd,
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .padding(bottom = 50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+                    shape = RoundedCornerShape(16.dp),
                 ) {
-                    Text("adicionar", fontSize = 24.sp)
+                    Text(
+                        "Adicionar",
+                        fontSize = 20.sp,
+                        color = colorScheme.onPrimary
+                    )
                 }
             }
         }

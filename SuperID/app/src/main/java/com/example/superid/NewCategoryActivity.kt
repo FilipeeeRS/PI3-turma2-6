@@ -5,7 +5,9 @@ package com.example.superid
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
@@ -51,25 +53,38 @@ fun NewCategoryScreen(
     showError: Boolean = false
 ) {
     var nomeCategoria by remember { mutableStateOf("") }
+    val colorScheme = MaterialTheme.colorScheme
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("SuperID")
+                        Text(
+                            "SuperID",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = colorScheme.onPrimary
+                        )
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = "Secure",
-                            modifier = Modifier.padding(start = 8.dp)
+                            modifier = Modifier.padding(start = 8.dp),
+                            tint = colorScheme.onPrimary
                         )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = colorScheme.onPrimary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = colorScheme.primary
+                )
             )
         },
         content = { paddingValues ->
@@ -77,29 +92,51 @@ fun NewCategoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Nova categoria", fontSize = 30.sp)
-                Spacer(modifier = Modifier.height(32.dp))
 
-                TextField(
-                    value = nomeCategoria,
-                    onValueChange = { nomeCategoria = it },
-                    label = { Text("Nome da categoria:", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth(0.85f)
+                Text(
+                    text = "Nova categoria",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = colorScheme.onBackground
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TextField(
+                        value = nomeCategoria,
+                        onValueChange = { nomeCategoria = it },
+                        label = { Text("Nome da categoria:", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline,
+                            focusedLabelColor = colorScheme.primary,
+                            unfocusedLabelColor = colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
 
                 if (showError) {
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "ERRO: categoria já existe.",
-                        color = Color.Red,
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .fillMaxWidth(0.85f)
+                        color = colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
@@ -109,10 +146,15 @@ fun NewCategoryScreen(
                     onClick = onAdd,
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .padding(bottom = 50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+                    shape = RoundedCornerShape(16.dp),
                 ) {
-                    Text("adicionar", fontSize = 24.sp)
+                    Text(
+                        "Adicionar",
+                        fontSize = 20.sp,
+                        color = colorScheme.onPrimary
+                    )
                 }
             }
         }
