@@ -78,11 +78,24 @@ class CadastroActivity : ComponentActivity() {
                             .document(uid)
                             .set(user)
                             .addOnSuccessListener {
-                                Toast.makeText(
-                                    this,
-                                    "Conta criada com sucesso!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                val user = auth.currentUser
+                                user?.sendEmailVerification()
+                                    ?.addOnCompleteListener { verifyTask ->
+                                        if (verifyTask.isSuccessful) {
+                                            Toast.makeText(
+                                                this,
+                                                "Conta criada! Verifique seu e-mail para ativá-la.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+                                            Toast.makeText(
+                                                this,
+                                                "Conta criada, mas falha ao enviar e-mail de verificação.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+
                                 val intent = Intent(this, HomeActivity::class.java)
                                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                 startActivity(intent)
@@ -104,8 +117,7 @@ class CadastroActivity : ComponentActivity() {
                 }
             }
     }
-
-}
+                }
 
 @Composable
 fun TelaCadastro(
