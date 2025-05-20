@@ -27,6 +27,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import android.util.Base64
 import androidx.compose.ui.graphics.Color
+import com.google.firebase.firestore.FirebaseFirestore
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
@@ -57,6 +58,18 @@ fun descriptografarSenha(criptografada: String): String {
     }
 }
 
+fun deletarSenha(userId: String, senhaId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    db.collection("users")
+        .document(userId)
+        .collection("passwords")
+        .document(senhaId)
+        .delete()
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { e -> onError(e) }
+}
+
+
 @Preview(showBackground = true)
 @Composable
 fun HomePreview() {
@@ -72,6 +85,16 @@ fun HomeScreen() {
     var expanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("Categorias") }
     var passwordList by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+    val filteredPasswords = remember(passwordList, selectedCategory) {
+        if (selectedCategory == "Todas" || selectedCategory == "Categorias") {
+            passwordList
+        } else {
+            passwordList.filter { (_, data) ->
+                data["category"] == selectedCategory
+            }
+        }
+    }
+
     var categoryList by remember {
         mutableStateOf(
             mutableListOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
@@ -248,15 +271,14 @@ fun HomeScreen() {
             }
 
             val visibilidadeSenha = remember { mutableStateMapOf<String, Boolean>() }
+            var senhaIdParaExcluir by remember { mutableStateOf<String?>(null) }
 
-            // LISTA DE SENHAS
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 8.dp)
             ) {
-
-                items(passwordList) { (id, senhaItem) ->
+                items(filteredPasswords) { (id, senhaItem) ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -269,63 +291,97 @@ fun HomeScreen() {
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
+                            // Linha 1 — título + ícones
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = senhaItem["nomeConta"] as? String ?: "Sem nome",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Categoria: ${senhaItem["category"] as? String ?: "Sem categoria"}",
-                                        fontSize = 14.sp
-                                    )
-                                    val descricao = senhaItem["description"] as? String
-                                    if (!descricao.isNullOrEmpty()) {
-                                        Text(
-                                            text = descricao,
-                                            fontSize = 14.sp,
-                                            color = Color.Gray
-                                        )
-                                    }
-                                }
-
-                                IconButton(onClick = {}) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // 👁 Mostrar/ocultar senha
-                            val senhaCriptografada = senhaItem["password"] as? String
-                            val senhaVisivel = visibilidadeSenha[id] == true
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = if (senhaVisivel) descriptografarSenha(
-                                        senhaCriptografada ?: ""
-                                    ) else "••••••••",
-                                    fontSize = 16.sp,
+                                    text = senhaItem["nomeConta"] as? String ?: "Sem nome",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
 
                                 IconButton(onClick = {
-                                    visibilidadeSenha[id] = !senhaVisivel
+                                    visibilidadeSenha[id] = !(visibilidadeSenha[id] ?: false)
                                 }) {
                                     Icon(
-                                        imageVector = if (senhaVisivel) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = if (senhaVisivel) "Ocultar senha" else "Mostrar senha"
+                                        imageVector = if (visibilidadeSenha[id] == true) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "Toggle senha"
+                                    )
+                                }
+
+                                IconButton(onClick = {
+                                    val intent = Intent(context, EditPasswordActivity::class.java)
+                                    intent.putExtra("senhaId", id)
+                                    context.startActivity(intent)
+                                }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                }
+
+                                IconButton(onClick = {
+                                    senhaIdParaExcluir = id
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
+
+                            // Linha 2 — categoria
+                            Text(
+                                text = "categoria: ${senhaItem["category"] as? String ?: "Sem categoria"}",
+                                fontSize = 14.sp
+                            )
+
+                            // Linha 3 — senha (visível ou oculta)
+                            val senhaCriptografada = senhaItem["password"] as? String
+                            val senhaVisivel = visibilidadeSenha[id] == true
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (senhaVisivel)
+                                    descriptografarSenha(senhaCriptografada ?: "")
+                                else
+                                    "••••••••",
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                }
+            }
+            if (senhaIdParaExcluir != null) {
+                AlertDialog(
+                    onDismissRequest = { senhaIdParaExcluir = null },
+                    title = { Text("Confirmar exclusão") },
+                    text = { Text("Tem certeza que deseja remover esta senha?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                            senhaIdParaExcluir?.let { senhaId ->
+                                if (userId != null) {
+                                    deletarSenha(userId, senhaId,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Senha removida", Toast.LENGTH_SHORT).show()
+                                            senhaIdParaExcluir = null
+                                        },
+                                        onError = {
+                                            Toast.makeText(context, "Erro ao remover: ${it.message}", Toast.LENGTH_SHORT).show()
+                                            senhaIdParaExcluir = null
+                                        }
                                     )
                                 }
                             }
+                        }) {
+                            Text("Remover", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { senhaIdParaExcluir = null }) {
+                            Text("Cancelar")
                         }
                     }
-                }
+                )
             }
         }
     }
