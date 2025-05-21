@@ -1,5 +1,6 @@
 package com.example.superid
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -26,10 +27,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import android.util.Base64
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Color
 import com.google.firebase.firestore.FirebaseFirestore
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.AlertDialog
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +87,7 @@ fun HomePreview() {
 fun HomeScreen() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
+    var logoutDialog by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("Categorias") }
     var passwordList by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
     val filteredPasswords = remember(passwordList, selectedCategory) {
@@ -132,6 +137,15 @@ fun HomeScreen() {
         }
     }
 
+    fun signOut(context: Context) {
+        FirebaseAuth.getInstance().signOut()
+        Toast.makeText(context, "Desconexão realizada", Toast.LENGTH_SHORT).show()
+
+        val intent = Intent(context, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        context.startActivity(intent)
+    }
+
 
 
     Scaffold(
@@ -143,6 +157,7 @@ fun HomeScreen() {
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -150,11 +165,25 @@ fun HomeScreen() {
                                 style = MaterialTheme.typography.titleLarge,
                                 color = colorScheme.onPrimary
                             )
+
                             Icon(
                                 imageVector = Icons.Default.Lock,
                                 contentDescription = "Secure",
                                 modifier = Modifier.padding(start = 8.dp),
-                                tint = colorScheme.onPrimary
+
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Icon(
+                                imageVector = Icons.Default.Logout,
+                                contentDescription = "Logout",
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .clickable {
+                                        logoutDialog = true
+                                    },
+
                             )
                         }
                     }
@@ -378,6 +407,26 @@ fun HomeScreen() {
                     },
                     dismissButton = {
                         TextButton(onClick = { senhaIdParaExcluir = null }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
+            if (logoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { logoutDialog = false },
+                    title = { Text("Confirmar Saída") },
+                    text = { Text("Tem certeza que deseja sair da conta?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            logoutDialog = false
+                            signOut(context)
+                        }) {
+                            Text("Sair", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { logoutDialog = false }) {
                             Text("Cancelar")
                         }
                     }
