@@ -57,11 +57,13 @@ fun TermsScreen(modifier: Modifier = Modifier) {
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(32.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "Ao usar este aplicativo, você concorda com nossos termos de uso:",
+                    "Termos de Uso – SuperID",
                     style = MaterialTheme.typography.titleLarge,
                     color = colorScheme.onSurface
                 )
@@ -69,12 +71,41 @@ fun TermsScreen(modifier: Modifier = Modifier) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    "- Uso responsável das suas credenciais\n" +
-                            "- Login sem senha via QR Code\n" +
-                            "- Recuperação de senha via e-mail\n\n" +
-                            "Não compartilhamos seus dados com terceiros.",
+                    """
+                    1. Uso do Aplicativo
+                    - Fornecer informações corretas ao realizar o cadastro.
+                    - Validar o e-mail para acessar todas as funcionalidades.
+                    - Manter a confidencialidade da senha mestre.
+
+                    2. Armazenamento e Proteção de Dados
+                    - Dados essenciais são armazenados com segurança.
+                    - As senhas são protegidas por técnicas apropriadas.
+                    - Nenhum sistema é totalmente imune a riscos.
+
+                    3. Login sem Senha
+                    - Login em sites parceiros via QR Code.
+                    - O usuário confirma a autenticação através do aplicativo.
+
+                    4. Recuperação de Senha
+                    - Recuperação via e-mail cadastrado e validado.
+
+                    5. Exclusão de Dados
+                    - Exclusão de senhas e categorias a qualquer momento.
+                    - Exclusão de uma categoria remove todas as senhas vinculadas.
+                    - O SuperID não se responsabiliza por perdas decorrentes dessas ações.
+
+                    6. Limitações de Responsabilidade
+                    - Altos padrões de segurança e confiabilidade.
+                    - Não nos responsabilizamos por falhas técnicas ou perdas.
+
+                    7. Modificações nos Termos
+                    - Os Termos podem ser modificados a qualquer momento.
+
+                    8. Aceitação dos Termos
+                    - Ao clicar em 'Aceitar', você concorda com todas as disposições.
+                    """.trimIndent(),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = colorScheme.onSurface,
+                    color = colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
