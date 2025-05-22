@@ -113,6 +113,7 @@ class CadastroActivity : ComponentActivity() {
                     Toast.makeText(
                         this,
                         "Erro ao criar conta: ${task.exception?.message}",
+
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -263,7 +264,7 @@ fun TelaCadastro(
 
                 if (erroConfirmacao) {
                     Text(
-                        text = "As senhas não coincidem.",
+                        text = "As senhas são diferentes.",
                         style = typography.bodySmall.copy(color = colorScheme.error)
                     )
                 }
@@ -288,24 +289,27 @@ fun TelaCadastro(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    "Já possui conta?",
-                    style = typography.bodySmall.copy(color = colorScheme.onSurfaceVariant)
-                )
-
-                TextButton(onClick = {
-                    val intent = Intent(context, LoginActivity::class.java)
-                    context.startActivity(intent)
-                }) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        "Entrar",
-                        style = typography.bodySmall.copy(
-                            color = colorScheme.primary,
-                            textDecoration = TextDecoration.Underline
-                        )
+                        "Já possui conta?",
+                        style = typography.bodySmall.copy(color = colorScheme.onSurfaceVariant)
                     )
+
+                    TextButton(onClick = {
+                        val intent = Intent(context, LoginActivity::class.java)
+                        context.startActivity(intent)
+                    }) {
+                        Text(
+                            "Entrar",
+                            style = typography.bodySmall.copy(
+                                color = colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        )
+                    }
                 }
             }
         }
