@@ -126,12 +126,17 @@ fun HomeScreen() {
                         Toast.makeText(context, "Erro ao ouvir categorias", Toast.LENGTH_SHORT).show()
                         return@addSnapshotListener
                     }
-                    val dynamicCategories = snapshots?.documents?.mapNotNull { it.getString("nome") } ?: emptyList()
-                    categoryList = (categoryList + dynamicCategories).toMutableList()
+
+                    val categoriasFixas = listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
+                    val dynamicCategories = snapshots?.documents
+                        ?.mapNotNull { it.getString("nome") }
+                        ?.filter { it !in categoriasFixas }
+                        ?: emptyList()
+
+                    categoryList = (categoriasFixas + dynamicCategories).toMutableList()
                 }
         }
     }
-
 
 
     Scaffold(
@@ -237,7 +242,36 @@ fun HomeScreen() {
                         categoryList.forEach { category ->
                             DropdownMenuItem(
                                 text = {
-                                    Text(category, color = colorScheme.onSurface)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(category, color = colorScheme.onSurface, modifier = Modifier.weight(1f))
+                                        if (category !in listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")) {
+                                            IconButton(onClick = {
+                                                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                if (userId != null) {
+                                                    Firebase.firestore.collection("users").document(userId)
+                                                        .collection("categories").whereEqualTo("nome", category)
+                                                        .get()
+                                                        .addOnSuccessListener { documents ->
+                                                            for (document in documents) {
+                                                                Firebase.firestore.collection("users").document(userId)
+                                                                    .collection("categories").document(document.id)
+                                                                    .delete()
+                                                            }
+                                                            Toast.makeText(context, "Categoria removida", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                        .addOnFailureListener {
+                                                            Toast.makeText(context, "Erro ao remover categoria", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                }
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
+                                            }
+                                        }
+                                    }
                                 },
                                 onClick = {
                                     selectedCategory = category
