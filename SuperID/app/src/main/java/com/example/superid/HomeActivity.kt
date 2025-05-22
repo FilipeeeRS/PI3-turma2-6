@@ -34,6 +34,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.res.painterResource
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -203,6 +204,7 @@ fun HomeScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 FloatingActionButton(
+
                     onClick = {
                         val intent = Intent(context, QRCodeActivity::class.java)
                         context.startActivity(intent)
@@ -210,7 +212,11 @@ fun HomeScreen() {
                     containerColor = colorScheme.primary,
                     contentColor = colorScheme.onPrimary
                 ) {
-                    Text("QR")
+                   Icon(
+                       painter = painterResource(R.drawable.qr_code_logo),
+                       contentDescription = "QR Code",
+                       modifier = Modifier.size(24.dp)
+                   )
                 }
 
                 FloatingActionButton(
@@ -312,7 +318,7 @@ fun HomeScreen() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8FF)),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.primary),
                         elevation = CardDefaults.cardElevation(3.dp),
                     ) {
                         Column(
