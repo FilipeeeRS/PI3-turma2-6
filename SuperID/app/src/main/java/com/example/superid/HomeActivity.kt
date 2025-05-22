@@ -213,9 +213,8 @@ fun HomeScreen() {
                     contentColor = colorScheme.onPrimary
                 ) {
                    Icon(
-                       painter = painterResource(R.drawable.qr_code_logo),
+                       Icons.Default.QrCodeScanner,
                        contentDescription = "QR Code",
-                       modifier = Modifier.size(24.dp)
                    )
                 }
 
