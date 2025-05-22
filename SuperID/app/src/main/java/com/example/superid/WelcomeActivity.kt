@@ -103,8 +103,6 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Button(
                     onClick = {
                         val intent = Intent(context, TermsActivity::class.java)
