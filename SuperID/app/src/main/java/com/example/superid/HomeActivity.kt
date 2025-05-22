@@ -361,17 +361,33 @@ fun HomeScreen() {
                                 }
                             }
 
-                            // Linha 2 — categoria
+                            // Categoria
                             Text(
-                                text = "categoria: ${senhaItem["category"] as? String ?: "Sem categoria"}",
+                                text = "Categoria: ${senhaItem["category"] as? String ?: "Sem categoria"}",
                                 fontSize = 14.sp
                             )
 
-                            // Linha 3 — senha (visível ou oculta)
+                            // Site (se houver)
+                            (senhaItem["urlSite"] as? String)?.let {
+                                Text(text = "Site: $it", fontSize = 14.sp)
+                            }
+
+                            // Descrição (se houver)
+                            (senhaItem["description"] as? String)?.takeIf { it.isNotBlank() }?.let {
+                                Text(text = "Descrição: $it", fontSize = 14.sp)
+                            }
+
+                            // Login (se houver)
+                            (senhaItem["login"] as? String)?.takeIf { it.isNotBlank() }?.let {
+                                Text(text = "Login: $it", fontSize = 14.sp)
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Senha (visível ou oculta)
                             val senhaCriptografada = senhaItem["password"] as? String
                             val senhaVisivel = visibilidadeSenha[id] == true
 
-                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = if (senhaVisivel)
                                     descriptografarSenha(senhaCriptografada ?: "")
@@ -381,6 +397,7 @@ fun HomeScreen() {
                             )
                         }
                     }
+
 
                 }
             }
