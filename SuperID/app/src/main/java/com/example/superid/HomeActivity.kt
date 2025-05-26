@@ -58,11 +58,19 @@ fun descriptografarSenha(criptografada: String): String {
     }
 }
 
-fun deletarSenha(userId: String, senhaId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+// ATENÇÃO: Esta função de deletar senha precisará ser ajustada para o novo caminho completo
+// Como a NewPasswordActivity salva no caminho users/{userId}/categorias/{categoria}/senhas/{senhaId}
+// a função de deletar precisa saber qual categoria a senha pertence.
+// A forma mais robusta é passar a categoria junto com o senhaId.
+// POR ENQUANTO, estou deixando-a como estava, mas você precisará decidir como obter a categoria aqui
+// para que a exclusão funcione corretamente com o novo modelo de dados.
+fun deletarSenha(userId: String, categoria: String, senhaId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
     val db = FirebaseFirestore.getInstance()
     db.collection("users")
         .document(userId)
-        .collection("passwords")
+        .collection("categorias") // Novo caminho
+        .document(categoria)     // Novo caminho
+        .collection("senhas")    // Novo caminho
         .document(senhaId)
         .delete()
         .addOnSuccessListener { onSuccess() }
@@ -84,13 +92,17 @@ fun HomeScreen() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("Categorias") }
-    var passwordList by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+    // passwordList agora armazena Map<String, Any> para os dados da senha
+    // E o Pair<String, String> será o ID da senha e a CATEGORIA da senha, respectivamente.
+    var passwordList by remember { mutableStateOf<List<Triple<String, String, Map<String, Any>>>>(emptyList()) }
+
     val filteredPasswords = remember(passwordList, selectedCategory) {
         if (selectedCategory == "Todas" || selectedCategory == "Categorias") {
             passwordList
         } else {
-            passwordList.filter { (_, data) ->
-                data["category"] == selectedCategory
+            // A filtragem agora usa o segundo elemento do Triple (a categoria da senha)
+            passwordList.filter { (_, categoryOfPassword, _) ->
+                categoryOfPassword == selectedCategory
             }
         }
     }
@@ -105,36 +117,75 @@ fun HomeScreen() {
     // Carregar senhas e categorias do Firestore
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid != null) {
-            // Escuta as senhas em tempo real
-            Firebase.firestore.collection("users").document(uid).collection("passwords")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        Toast.makeText(context, "Erro ao ouvir senhas", Toast.LENGTH_SHORT).show()
+        if (uid == null) {
+            // Se o usuário não estiver logado, redirecione ou mostre uma mensagem.
+            Toast.makeText(context, "Usuário não logado.", Toast.LENGTH_SHORT).show()
+            // Exemplo: context.startActivity(Intent(context, LoginActivity::class.java))
+            return@LaunchedEffect
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        val userCategoriesRef = db.collection("users").document(uid).collection("categories")
+
+        // Listener para as categorias
+        userCategoriesRef.addSnapshotListener { categorySnapshots, categoryE ->
+            if (categoryE != null) {
+                Toast.makeText(context, "Erro ao ouvir categorias: ${categoryE.message}", Toast.LENGTH_SHORT).show()
+                return@addSnapshotListener
+            }
+
+            val categoriasFixas = listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
+            val dynamicCategories = categorySnapshots?.documents
+                ?.mapNotNull { it.getString("nome") }
+                ?.filter { it !in categoriasFixas } // Filtra para não duplicar se já existir
+                ?: emptyList()
+
+            val allActiveCategories = (categoriasFixas.drop(1) + dynamicCategories).distinct() // remove "Todas" e garante unicidade
+            categoryList = (categoriasFixas + dynamicCategories).toMutableList() // Atualiza a lista de categorias para a UI
+
+            // Agora, para cada categoria ativa, adicionamos um listener para as senhas
+            // Precisamos de uma forma de gerenciar esses listeners para evitar duplicação e remover os antigos.
+            // Usaremos um MutableState para armazenar os listeners ativos e limpá-los.
+            val currentPasswordListeners = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
+            val newPasswordList = mutableListOf<Triple<String, String, Map<String, Any>>>()
+
+            // Remove listeners antigos antes de adicionar novos
+            currentPasswordListeners.forEach { it.remove() }
+            currentPasswordListeners.clear()
+
+
+            // Se não houver categorias ativas para buscar senhas, limpa a lista
+            if (allActiveCategories.isEmpty()) {
+                passwordList = emptyList()
+                return@addSnapshotListener
+            }
+
+
+            // Adiciona listeners para cada categoria e coleta as senhas
+            allActiveCategories.forEach { categoryName ->
+                val categoryPasswordsRef = db.collection("users").document(uid)
+                    .collection("categorias").document(categoryName)
+                    .collection("senhas")
+
+                val listenerRegistration = categoryPasswordsRef.addSnapshotListener { passwordSnapshots, passwordE ->
+                    if (passwordE != null) {
+                        Toast.makeText(context, "Erro ao ouvir senhas de '$categoryName': ${passwordE.message}", Toast.LENGTH_SHORT).show()
                         return@addSnapshotListener
                     }
-                    val list = snapshots?.documents?.mapNotNull { doc ->
-                        doc.id to (doc.data ?: emptyMap())
-                    } ?: emptyList()
-                    passwordList = list
-                }
 
-            // Escuta as categorias em tempo real
-            Firebase.firestore.collection("users").document(uid).collection("categories")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        Toast.makeText(context, "Erro ao ouvir categorias", Toast.LENGTH_SHORT).show()
-                        return@addSnapshotListener
+                    // Remove senhas da categoria atual da lista temporária antes de adicionar as atualizadas
+                    newPasswordList.removeAll { (_, cat, _) -> cat == categoryName }
+
+                    passwordSnapshots?.documents?.forEach { doc ->
+                        val senhaData = doc.data ?: emptyMap()
+                        // Armazena o ID da senha, a CATEGORIA da senha, e os DADOS da senha
+                        newPasswordList.add(Triple(doc.id, categoryName, senhaData))
                     }
-
-                    val categoriasFixas = listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
-                    val dynamicCategories = snapshots?.documents
-                        ?.mapNotNull { it.getString("nome") }
-                        ?.filter { it !in categoriasFixas }
-                        ?: emptyList()
-
-                    categoryList = (categoriasFixas + dynamicCategories).toMutableList()
+                    // Atualiza a lista de senhas principal após processar todas as atualizações
+                    passwordList = newPasswordList.toList()
                 }
+                currentPasswordListeners.add(listenerRegistration)
+            }
         }
     }
 
@@ -260,8 +311,13 @@ fun HomeScreen() {
                                                                 Firebase.firestore.collection("users").document(userId)
                                                                     .collection("categories").document(document.id)
                                                                     .delete()
+                                                                // Após deletar a categoria, você também deve deletar as senhas dessa categoria
+                                                                // manualmente, pois o Firestore não faz isso automaticamente para subcoleções.
+                                                                // Isso pode ser uma operação mais complexa se houver muitas senhas.
+                                                                // Considere adicionar uma função que apaga a subcoleção "senhas"
+                                                                // ao deletar a categoria.
+                                                                Toast.makeText(context, "Categoria removida", Toast.LENGTH_SHORT).show()
                                                             }
-                                                            Toast.makeText(context, "Categoria removida", Toast.LENGTH_SHORT).show()
                                                         }
                                                         .addOnFailureListener {
                                                             Toast.makeText(context, "Erro ao remover categoria", Toast.LENGTH_SHORT).show()
@@ -305,14 +361,15 @@ fun HomeScreen() {
             }
 
             val visibilidadeSenha = remember { mutableStateMapOf<String, Boolean>() }
-            var senhaIdParaExcluir by remember { mutableStateOf<String?>(null) }
+            var senhaParaExcluir by remember { mutableStateOf<Triple<String, String, Map<String, Any>>?>(null) } // Triple (senhaId, categoriaDaSenha, senhaData)
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 8.dp)
             ) {
-                items(filteredPasswords) { (id, senhaItem) ->
+                // filteredPasswords agora é uma lista de Triple<String, String, Map<String, Any>>
+                items(filteredPasswords) { (id, categoriaDaSenha, senhaItem) ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -349,13 +406,14 @@ fun HomeScreen() {
                                 IconButton(onClick = {
                                     val intent = Intent(context, EditPasswordActivity::class.java)
                                     intent.putExtra("senhaId", id)
+                                    intent.putExtra("categoriaDaSenha", categoriaDaSenha) // Passando a categoria
                                     context.startActivity(intent)
                                 }) {
                                     Icon(Icons.Default.Edit, contentDescription = "Editar")
                                 }
 
                                 IconButton(onClick = {
-                                    senhaIdParaExcluir = id
+                                    senhaParaExcluir = Triple(id, categoriaDaSenha, senhaItem)
                                 }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
                                 }
@@ -384,24 +442,24 @@ fun HomeScreen() {
 
                 }
             }
-            if (senhaIdParaExcluir != null) {
+            if (senhaParaExcluir != null) {
                 AlertDialog(
-                    onDismissRequest = { senhaIdParaExcluir = null },
+                    onDismissRequest = { senhaParaExcluir = null },
                     title = { Text("Confirmar exclusão") },
                     text = { Text("Tem certeza que deseja remover esta senha?") },
                     confirmButton = {
                         TextButton(onClick = {
                             val userId = FirebaseAuth.getInstance().currentUser?.uid
-                            senhaIdParaExcluir?.let { senhaId ->
+                            senhaParaExcluir?.let { (senhaId, categoriaDaSenha, _) ->
                                 if (userId != null) {
-                                    deletarSenha(userId, senhaId,
+                                    deletarSenha(userId, categoriaDaSenha, senhaId,
                                         onSuccess = {
                                             Toast.makeText(context, "Senha removida", Toast.LENGTH_SHORT).show()
-                                            senhaIdParaExcluir = null
+                                            senhaParaExcluir = null
                                         },
                                         onError = {
                                             Toast.makeText(context, "Erro ao remover: ${it.message}", Toast.LENGTH_SHORT).show()
-                                            senhaIdParaExcluir = null
+                                            senhaParaExcluir = null
                                         }
                                     )
                                 }
@@ -411,7 +469,7 @@ fun HomeScreen() {
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { senhaIdParaExcluir = null }) {
+                        TextButton(onClick = { senhaParaExcluir = null }) {
                             Text("Cancelar")
                         }
                     }

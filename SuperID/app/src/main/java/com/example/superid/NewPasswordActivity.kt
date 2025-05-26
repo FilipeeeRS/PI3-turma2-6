@@ -100,10 +100,15 @@ fun salvarNovaSenha(
         "accessToken" to accessToken
     )
 
-    db.collection("users")
+    // Caminho: users/{userId}/categorias/{categoria}/senhas/{senhaId}
+    val senhaRef = db.collection("users")
         .document(userId)
-        .collection("passwords")
-        .add(senhaMap)
+        .collection("categorias")
+        .document(categoria)
+        .collection("senhas")
+        .document() // gera um ID aleatório para a senha
+
+    senhaRef.set(senhaMap)
         .addOnSuccessListener {
             Toast.makeText(context, "Senha salva com sucesso!", Toast.LENGTH_SHORT).show()
             onSuccess()

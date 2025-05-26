@@ -21,25 +21,46 @@ import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.util.Base64 // Importar Base64 para descriptografar (se não estiver já na HomeActivity)
+import javax.crypto.Cipher // Importar Cipher (se não estiver já na HomeActivity)
+import javax.crypto.spec.SecretKeySpec // Importar SecretKeySpec (se não estiver já na HomeActivity)
+
+
+
+
+
 
 class EditPasswordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val senhaId = intent.getStringExtra("senhaId") ?: return
+        val senhaId = intent.getStringExtra("senhaId") // ID do documento da senha
+        val categoriaDaSenha = intent.getStringExtra("categoriaDaSenha") // A categoria da senha (nova informação)
+
+        // Verificação para garantir que temos as informações necessárias
+        if (senhaId == null || categoriaDaSenha == null) {
+            Toast.makeText(this, "Erro: informações da senha incompletas.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
 
         setContent {
             SuperIDTheme {
-                EditPasswordScreen(senhaId) { finish() }
+                // Passa o ID da senha E a categoria da senha para a tela de edição
+                EditPasswordScreen(senhaId, categoriaDaSenha) { finish() }
             }
         }
     }
 }
 
+
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditPasswordScreen(
     senhaId: String,
+    categoriaDaSenha: String, // Novo parâmetro para receber a categoria da senha
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -48,27 +69,43 @@ fun EditPasswordScreen(
 
     var nome by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
-    var categoria by remember { mutableStateOf("Selecione uma categoria") }
+    var categoriaSelecionada by remember { mutableStateOf("Selecione uma categoria") } // Renomeado para evitar conflito com 'categoriaDaSenha'
     var expanded by remember { mutableStateOf(false) }
     var categoryList by remember { mutableStateOf(listOf<String>()) }
 
-    // Carrega campos
+    // Carrega campos da senha e as categorias disponíveis
     LaunchedEffect(Unit) {
         if (uid != null) {
-            FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
-                .collection("passwords").document(senhaId)
+            val db = FirebaseFirestore.getInstance()
+
+            // 1. Carrega os dados da senha específica usando o novo caminho
+            db.collection("users").document(uid)
+                .collection("categorias").document(categoriaDaSenha) // Usa a categoria recebida
+                .collection("senhas").document(senhaId)
                 .get()
                 .addOnSuccessListener { doc ->
-                    nome = doc.getString("nomeConta") ?: ""
-                    val senhaCriptografada = doc.getString("password") ?: ""
-                    senha = descriptografarSenha(senhaCriptografada)
-                    categoria = doc.getString("category") ?: "Selecione uma categoria"
+                    if (doc.exists()) {
+                        nome = doc.getString("nomeConta") ?: ""
+                        val senhaCriptografada = doc.getString("password") ?: ""
+                        senha = descriptografarSenha(senhaCriptografada)
+                        categoriaSelecionada = doc.getString("category") ?: "Selecione uma categoria"
+                    } else {
+                        Toast.makeText(context, "Senha não encontrada.", Toast.LENGTH_SHORT).show()
+                        onBack() // Volta se a senha não existir
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(context, "Erro ao carregar senha: ${e.message}", Toast.LENGTH_LONG).show()
+                    onBack() // Volta em caso de erro
                 }
 
-            FirebaseFirestore.getInstance()
-                .collection("users").document(uid).collection("categories")
-                .addSnapshotListener { snapshots, _ ->
+            // 2. Carrega as categorias dinâmicas para o dropdown
+            db.collection("users").document(uid).collection("categories")
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        Toast.makeText(context, "Erro ao carregar categorias: ${e.message}", Toast.LENGTH_SHORT).show()
+                        return@addSnapshotListener
+                    }
                     val dynamic = snapshots?.documents?.mapNotNull { it.getString("nome") } ?: emptyList()
                     categoryList = listOf("Sites Web", "Aplicativos", "Teclados de Acesso Físico") + dynamic
                 }
@@ -141,7 +178,7 @@ fun EditPasswordScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         TextField(
-                            value = categoria,
+                            value = categoriaSelecionada, // Usando o novo nome da variável de estado
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Categoria", style = MaterialTheme.typography.bodyMedium) },
@@ -161,7 +198,7 @@ fun EditPasswordScreen(
                                 DropdownMenuItem(
                                     text = { Text(selection) },
                                     onClick = {
-                                        categoria = selection
+                                        categoriaSelecionada = selection // Atualiza o estado
                                         expanded = false
                                     }
                                 )
@@ -189,19 +226,66 @@ fun EditPasswordScreen(
                 Button(
                     onClick = {
                         if (uid != null) {
-                            FirebaseFirestore.getInstance()
-                                .collection("users").document(uid)
-                                .collection("passwords").document(senhaId)
-                                .update(
-                                    "nomeConta", nome,
-                                    "password", criptografarSenha(senha),
-                                    "category", categoria
-                                ).addOnSuccessListener {
-                                    Toast.makeText(context, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
-                                    onBack()
-                                }.addOnFailureListener {
-                                    Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_SHORT).show()
+                            val db = FirebaseFirestore.getInstance()
+
+                            // Verifica se a categoria mudou
+                            if (categoriaSelecionada != categoriaDaSenha) {
+                                // Se a categoria mudou, precisamos mover o documento da senha
+                                // 1. Copia o documento para a nova categoria
+                                val oldPasswordRef = db.collection("users").document(uid)
+                                    .collection("categorias").document(categoriaDaSenha)
+                                    .collection("senhas").document(senhaId)
+
+                                val newPasswordRef = db.collection("users").document(uid)
+                                    .collection("categorias").document(categoriaSelecionada) // Nova categoria
+                                    .collection("senhas").document(senhaId) // Mantém o mesmo ID
+
+                                oldPasswordRef.get().addOnSuccessListener { oldDoc ->
+                                    if (oldDoc.exists()) {
+                                        val dataToMove = oldDoc.data?.toMutableMap() ?: mutableMapOf()
+                                        dataToMove["category"] = categoriaSelecionada // Atualiza a categoria nos dados
+                                        dataToMove["nomeConta"] = nome
+                                        dataToMove["password"] = criptografarSenha(senha)
+
+                                        newPasswordRef.set(dataToMove)
+                                            .addOnSuccessListener {
+                                                // 2. Deleta o documento da senha na categoria antiga
+                                                oldPasswordRef.delete()
+                                                    .addOnSuccessListener {
+                                                        Toast.makeText(context, "Senha atualizada e movida com sucesso!", Toast.LENGTH_SHORT).show()
+                                                        onBack()
+                                                    }
+                                                    .addOnFailureListener { e ->
+                                                        Toast.makeText(context, "Erro ao remover senha antiga: ${e.message}", Toast.LENGTH_LONG).show()
+                                                    }
+                                            }
+                                            .addOnFailureListener { e ->
+                                                Toast.makeText(context, "Erro ao mover senha para nova categoria: ${e.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                    }
+                                }.addOnFailureListener { e ->
+                                    Toast.makeText(context, "Erro ao ler senha antiga para mover: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
+                            } else {
+                                // Se a categoria NÃO mudou, apenas atualiza o documento existente
+                                db.collection("users").document(uid)
+                                    .collection("categorias").document(categoriaDaSenha) // Usa a categoria original
+                                    .collection("senhas").document(senhaId)
+                                    .update(
+                                        "nomeConta", nome,
+                                        "password", criptografarSenha(senha),
+                                        "category", categoriaSelecionada // Garante que o campo 'category' no documento esteja atualizado
+                                    )
+                                    .addOnSuccessListener {
+                                        Toast.makeText(context, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
+                                        onBack()
+                                    }
+                                    .addOnFailureListener {
+                                        Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                            }
+                        } else {
+                            Toast.makeText(context, "Usuário não autenticado.", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
