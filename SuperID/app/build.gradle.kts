@@ -82,14 +82,39 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation ("androidx.compose.ui:ui-viewbinding:1.5.1")
+
 
     //firebase
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.3")
     implementation("com.google.firebase:firebase-auth-ktx:23.2.0")
+    implementation ("com.google.firebase:firebase-functions-ktx")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    implementation ("com.google.accompanist:accompanist-permissions:0.33.2-alpha")
+    implementation ("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation ("androidx.camera:camera-core:1.1.0")
+    implementation ("androidx.camera:camera-camera2:1.1.0")
+    implementation ("androidx.camera:camera-lifecycle:1.1.0")
+    implementation ("androidx.camera:camera-view:1.1.0")
+
+
+
+    // CameraX
+    implementation ("androidx.camera:camera-core:1.3.0")
+    implementation ("androidx.camera:camera-camera2:1.3.0")
+    implementation ("androidx.camera:camera-lifecycle:1.3.0")
+    implementation ("androidx.camera:camera-view:1.3.0")
+    implementation ("com.google.accompanist:accompanist-permissions:0.33.2-alpha")
+
+
+
+    // ML Kit Barcode Scanning
+    implementation ("com.google.mlkit:barcode-scanning:17.2.0")
+
 
     //Material
     implementation("androidx.compose.material3:material3:1.2.1")
