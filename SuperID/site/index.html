@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login com QR Code</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #qrcode {
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h2>Login</h2>
+  <input type="text" placeholder="Usuário" disabled />
+  <input type="password" placeholder="Senha" disabled />
+  <button onclick="gerarQRCode()">Entrar com QR Code</button>
+
+  <div id="qrcode"></div>
+
+  <script>
+    // Valores predefinidos
+    const url = "www.teste.com"; // <- substitua pelo seu url salvo no Firestore
+    const apiKey = "Q2hpa2VuU3VwZXJTdXBlckNoYWluMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ubw=="; // <- substitua pela chave correta
+
+    async function gerarQRCode() {
+      try {
+        const response = await axios.post(
+          "https://performauth-7ql5gsrjha-uc.a.run.app",
+          { url, apiKey }, // <-- aqui enviando direto, sem "data"
+          { headers: { "Content-Type": "application/json" } }
+        );
+
+        const loginToken = response.data.result.loginToken;
+        const container = document.getElementById("qrcode");
+        container.innerHTML = "";
+        QRCode.toCanvas(loginToken, { width: 256 }, (err, canvas) => {
+          if (err) console.error(err);
+          else container.appendChild(canvas);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao gerar QR Code. Verifique a conexão e tente novamente.");
+      }
+    }
+  </script>
+</body>
+</html>
