@@ -76,6 +76,7 @@ fun salvarNovaSenha(
     senha: String,
     descricao: String,
     nomeConta: String,
+    url: String?,
     context: android.content.Context,
     onSuccess: () -> Unit,
     onError: (Exception) -> Unit
@@ -97,8 +98,13 @@ fun salvarNovaSenha(
         "login" to email,
         "password" to senhaCriptografada,
         "description" to descricao,
-        "accessToken" to accessToken
+        "accessToken" to accessToken,
+        "uid" to userId
     )
+
+    if (categoria == "Sites Web" && !url.isNullOrBlank()) {
+        senhaMap["urlSite"] = url.trim()
+    }
 
     // Caminho: users/{userId}/categorias/{categoria}/senhas/{senhaId}
     val senhaRef = db.collection("users")
@@ -130,6 +136,8 @@ fun NewPasswordScreen(
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("") }
+    var erroURL by remember { mutableStateOf(false) }
 
     var expanded by remember { mutableStateOf(false) }
     var categoryList by remember {
@@ -253,6 +261,28 @@ fun NewPasswordScreen(
                         }
                     }
                 }
+                if (categoria == "Sites Web") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = url,
+                        onValueChange = {
+                            url = it
+                            erroURL = false
+                        },
+                        label = { Text("URL do site", fontSize = 18.sp) },
+                        isError = erroURL,
+                        modifier = Modifier.fillMaxWidth(0.85f)
+                    )
+                    if (erroURL) {
+                        Text(
+                            text = "Você já tem uma senha cadastrada para esse site.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
+                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -297,22 +327,58 @@ fun NewPasswordScreen(
                 Button(
                     onClick = {
                         if (nomeConta.isNotEmpty() && categoria.isNotEmpty() && senha.isNotEmpty()) {
-                            salvarNovaSenha(
-                                categoria = categoria,
-                                email = email,
-                                senha = senha,
-                                descricao = descricao,
-                                nomeConta = nomeConta,
-                                context = context,
-                                onSuccess = { onBack() },
-                                onError = {
-                                    Toast.makeText(context, "Erro ao salvar senha!", Toast.LENGTH_SHORT).show()
-                                }
-                            )
+                            val uid = FirebaseAuth.getInstance().currentUser?.uid
+                            if (categoria == "Sites Web" && url.isBlank()) {
+                                Toast.makeText(context, "Informe a URL do site.", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            if (uid != null && categoria == "Sites Web") {
+                                FirebaseFirestore.getInstance()
+                                    .collection("users").document(uid)
+                                    .collection("passwords")
+                                    .whereEqualTo("urlSite", url.trim())
+                                    .get()
+                                    .addOnSuccessListener { docs ->
+                                        if (!docs.isEmpty) {
+                                            erroURL = true
+                                        } else {
+                                            // prossegue
+                                            salvarNovaSenha(
+                                                categoria = categoria,
+                                                email = email,
+                                                senha = senha,
+                                                descricao = descricao,
+                                                nomeConta = nomeConta,
+                                                url = if (categoria == "Sites Web") url else null,
+                                                context = context,
+                                                onSuccess = { onBack() },
+                                                onError = {
+                                                    Toast.makeText(context, "Erro ao salvar senha!", Toast.LENGTH_SHORT).show()
+                                                }
+                                            )
+                                        }
+                                    }
+                            } else {
+                                salvarNovaSenha(
+                                    categoria = categoria,
+                                    email = email,
+                                    senha = senha,
+                                    descricao = descricao,
+                                    nomeConta = nomeConta,
+                                    url = if (categoria == "Sites Web") url else null,
+                                    context = context,
+                                    onSuccess = { onBack() },
+                                    onError = {
+                                        Toast.makeText(context, "Erro ao salvar senha!", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
                         } else {
                             Toast.makeText(context, "Preencha os campos obrigatórios!", Toast.LENGTH_SHORT).show()
                         }
-                    },
+                    }
+                    ,
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
                         .height(56.dp),
