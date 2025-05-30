@@ -27,6 +27,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import android.util.Base64
 import androidx.compose.ui.graphics.Color
+import com.google.firebase.firestore.FirebaseFirestore
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
@@ -57,6 +58,26 @@ fun descriptografarSenha(criptografada: String): String {
     }
 }
 
+// ATENÇÃO: Esta função de deletar senha precisará ser ajustada para o novo caminho completo
+// Como a NewPasswordActivity salva no caminho users/{userId}/categorias/{categoria}/senhas/{senhaId}
+// a função de deletar precisa saber qual categoria a senha pertence.
+// A forma mais robusta é passar a categoria junto com o senhaId.
+// POR ENQUANTO, estou deixando-a como estava, mas você precisará decidir como obter a categoria aqui
+// para que a exclusão funcione corretamente com o novo modelo de dados.
+fun deletarSenha(userId: String, categoria: String, senhaId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    db.collection("users")
+        .document(userId)
+        .collection("categorias") // Novo caminho
+        .document(categoria)     // Novo caminho
+        .collection("senhas")    // Novo caminho
+        .document(senhaId)
+        .delete()
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { e -> onError(e) }
+}
+
+
 @Preview(showBackground = true)
 @Composable
 fun HomePreview() {
@@ -71,7 +92,21 @@ fun HomeScreen() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("Categorias") }
-    var passwordList by remember { mutableStateOf<List<Pair<String, Map<String, Any>>>>(emptyList()) }
+    // passwordList agora armazena Map<String, Any> para os dados da senha
+    // E o Pair<String, String> será o ID da senha e a CATEGORIA da senha, respectivamente.
+    var passwordList by remember { mutableStateOf<List<Triple<String, String, Map<String, Any>>>>(emptyList()) }
+
+    val filteredPasswords = remember(passwordList, selectedCategory) {
+        if (selectedCategory == "Todas" || selectedCategory == "Categorias") {
+            passwordList
+        } else {
+            // A filtragem agora usa o segundo elemento do Triple (a categoria da senha)
+            passwordList.filter { (_, categoryOfPassword, _) ->
+                categoryOfPassword == selectedCategory
+            }
+        }
+    }
+
     var categoryList by remember {
         mutableStateOf(
             mutableListOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
@@ -82,33 +117,77 @@ fun HomeScreen() {
     // Carregar senhas e categorias do Firestore
     LaunchedEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid != null) {
-            // Escuta as senhas em tempo real
-            Firebase.firestore.collection("users").document(uid).collection("passwords")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        Toast.makeText(context, "Erro ao ouvir senhas", Toast.LENGTH_SHORT).show()
-                        return@addSnapshotListener
-                    }
-                    val list = snapshots?.documents?.mapNotNull { doc ->
-                        doc.id to (doc.data ?: emptyMap())
-                    } ?: emptyList()
-                    passwordList = list
-                }
+        if (uid == null) {
+            // Se o usuário não estiver logado, redirecione ou mostre uma mensagem.
+            Toast.makeText(context, "Usuário não logado.", Toast.LENGTH_SHORT).show()
+            // Exemplo: context.startActivity(Intent(context, LoginActivity::class.java))
+            return@LaunchedEffect
+        }
 
-            // Escuta as categorias em tempo real
-            Firebase.firestore.collection("users").document(uid).collection("categories")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        Toast.makeText(context, "Erro ao ouvir categorias", Toast.LENGTH_SHORT).show()
+        val db = FirebaseFirestore.getInstance()
+        val userCategoriesRef = db.collection("users").document(uid).collection("categories")
+
+        // Listener para as categorias
+        userCategoriesRef.addSnapshotListener { categorySnapshots, categoryE ->
+            if (categoryE != null) {
+                Toast.makeText(context, "Erro ao ouvir categorias: ${categoryE.message}", Toast.LENGTH_SHORT).show()
+                return@addSnapshotListener
+            }
+
+            val categoriasFixas = listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")
+            val dynamicCategories = categorySnapshots?.documents
+                ?.mapNotNull { it.getString("nome") }
+                ?.filter { it !in categoriasFixas } // Filtra para não duplicar se já existir
+                ?: emptyList()
+
+            val allActiveCategories = (categoriasFixas.drop(1) + dynamicCategories).distinct() // remove "Todas" e garante unicidade
+            categoryList = (categoriasFixas + dynamicCategories).toMutableList() // Atualiza a lista de categorias para a UI
+
+            // Agora, para cada categoria ativa, adicionamos um listener para as senhas
+            // Precisamos de uma forma de gerenciar esses listeners para evitar duplicação e remover os antigos.
+            // Usaremos um MutableState para armazenar os listeners ativos e limpá-los.
+            val currentPasswordListeners = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
+            val newPasswordList = mutableListOf<Triple<String, String, Map<String, Any>>>()
+
+            // Remove listeners antigos antes de adicionar novos
+            currentPasswordListeners.forEach { it.remove() }
+            currentPasswordListeners.clear()
+
+
+            // Se não houver categorias ativas para buscar senhas, limpa a lista
+            if (allActiveCategories.isEmpty()) {
+                passwordList = emptyList()
+                return@addSnapshotListener
+            }
+
+
+            // Adiciona listeners para cada categoria e coleta as senhas
+            allActiveCategories.forEach { categoryName ->
+                val categoryPasswordsRef = db.collection("users").document(uid)
+                    .collection("categorias").document(categoryName)
+                    .collection("senhas")
+
+                val listenerRegistration = categoryPasswordsRef.addSnapshotListener { passwordSnapshots, passwordE ->
+                    if (passwordE != null) {
+                        Toast.makeText(context, "Erro ao ouvir senhas de '$categoryName': ${passwordE.message}", Toast.LENGTH_SHORT).show()
                         return@addSnapshotListener
                     }
-                    val dynamicCategories = snapshots?.documents?.mapNotNull { it.getString("nome") } ?: emptyList()
-                    categoryList = (categoryList + dynamicCategories).toMutableList()
+
+                    // Remove senhas da categoria atual da lista temporária antes de adicionar as atualizadas
+                    newPasswordList.removeAll { (_, cat, _) -> cat == categoryName }
+
+                    passwordSnapshots?.documents?.forEach { doc ->
+                        val senhaData = doc.data ?: emptyMap()
+                        // Armazena o ID da senha, a CATEGORIA da senha, e os DADOS da senha
+                        newPasswordList.add(Triple(doc.id, categoryName, senhaData))
+                    }
+                    // Atualiza a lista de senhas principal após processar todas as atualizações
+                    passwordList = newPasswordList.toList()
                 }
+                currentPasswordListeners.add(listenerRegistration)
+            }
         }
     }
-
 
 
     Scaffold(
@@ -214,7 +293,41 @@ fun HomeScreen() {
                         categoryList.forEach { category ->
                             DropdownMenuItem(
                                 text = {
-                                    Text(category, color = colorScheme.onSurface)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(category, color = colorScheme.onSurface, modifier = Modifier.weight(1f))
+                                        if (category !in listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")) {
+                                            IconButton(onClick = {
+                                                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                if (userId != null) {
+                                                    Firebase.firestore.collection("users").document(userId)
+                                                        .collection("categories").whereEqualTo("nome", category)
+                                                        .get()
+                                                        .addOnSuccessListener { documents ->
+                                                            for (document in documents) {
+                                                                Firebase.firestore.collection("users").document(userId)
+                                                                    .collection("categories").document(document.id)
+                                                                    .delete()
+                                                                // Após deletar a categoria, você também deve deletar as senhas dessa categoria
+                                                                // manualmente, pois o Firestore não faz isso automaticamente para subcoleções.
+                                                                // Isso pode ser uma operação mais complexa se houver muitas senhas.
+                                                                // Considere adicionar uma função que apaga a subcoleção "senhas"
+                                                                // ao deletar a categoria.
+                                                                Toast.makeText(context, "Categoria removida", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }
+                                                        .addOnFailureListener {
+                                                            Toast.makeText(context, "Erro ao remover categoria", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                }
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
+                                            }
+                                        }
+                                    }
                                 },
                                 onClick = {
                                     selectedCategory = category
@@ -248,15 +361,15 @@ fun HomeScreen() {
             }
 
             val visibilidadeSenha = remember { mutableStateMapOf<String, Boolean>() }
+            var senhaParaExcluir by remember { mutableStateOf<Triple<String, String, Map<String, Any>>?>(null) } // Triple (senhaId, categoriaDaSenha, senhaData)
 
-            // LISTA DE SENHAS
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 8.dp)
             ) {
-
-                items(passwordList) { (id, senhaItem) ->
+                // filteredPasswords agora é uma lista de Triple<String, String, Map<String, Any>>
+                items(filteredPasswords) { (id, categoriaDaSenha, senhaItem) ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -269,63 +382,98 @@ fun HomeScreen() {
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
+                            // Linha 1 — título + ícones
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = senhaItem["nomeConta"] as? String ?: "Sem nome",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Categoria: ${senhaItem["category"] as? String ?: "Sem categoria"}",
-                                        fontSize = 14.sp
-                                    )
-                                    val descricao = senhaItem["description"] as? String
-                                    if (!descricao.isNullOrEmpty()) {
-                                        Text(
-                                            text = descricao,
-                                            fontSize = 14.sp,
-                                            color = Color.Gray
-                                        )
-                                    }
-                                }
-
-                                IconButton(onClick = {}) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // 👁 Mostrar/ocultar senha
-                            val senhaCriptografada = senhaItem["password"] as? String
-                            val senhaVisivel = visibilidadeSenha[id] == true
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = if (senhaVisivel) descriptografarSenha(
-                                        senhaCriptografada ?: ""
-                                    ) else "••••••••",
-                                    fontSize = 16.sp,
+                                    text = senhaItem["nomeConta"] as? String ?: "Sem nome",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
 
                                 IconButton(onClick = {
-                                    visibilidadeSenha[id] = !senhaVisivel
+                                    visibilidadeSenha[id] = !(visibilidadeSenha[id] ?: false)
                                 }) {
                                     Icon(
-                                        imageVector = if (senhaVisivel) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = if (senhaVisivel) "Ocultar senha" else "Mostrar senha"
+                                        imageVector = if (visibilidadeSenha[id] == true) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "Toggle senha"
+                                    )
+                                }
+
+                                IconButton(onClick = {
+                                    val intent = Intent(context, EditPasswordActivity::class.java)
+                                    intent.putExtra("senhaId", id)
+                                    intent.putExtra("categoriaDaSenha", categoriaDaSenha) // Passando a categoria
+                                    context.startActivity(intent)
+                                }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                }
+
+                                IconButton(onClick = {
+                                    senhaParaExcluir = Triple(id, categoriaDaSenha, senhaItem)
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
+
+                            // Linha 2 — categoria
+                            Text(
+                                text = "categoria: ${senhaItem["category"] as? String ?: "Sem categoria"}",
+                                fontSize = 14.sp
+                            )
+
+                            // Linha 3 — senha (visível ou oculta)
+                            val senhaCriptografada = senhaItem["password"] as? String
+                            val senhaVisivel = visibilidadeSenha[id] == true
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (senhaVisivel)
+                                    descriptografarSenha(senhaCriptografada ?: "")
+                                else
+                                    "••••••••",
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                }
+            }
+            if (senhaParaExcluir != null) {
+                AlertDialog(
+                    onDismissRequest = { senhaParaExcluir = null },
+                    title = { Text("Confirmar exclusão") },
+                    text = { Text("Tem certeza que deseja remover esta senha?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                            senhaParaExcluir?.let { (senhaId, categoriaDaSenha, _) ->
+                                if (userId != null) {
+                                    deletarSenha(userId, categoriaDaSenha, senhaId,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Senha removida", Toast.LENGTH_SHORT).show()
+                                            senhaParaExcluir = null
+                                        },
+                                        onError = {
+                                            Toast.makeText(context, "Erro ao remover: ${it.message}", Toast.LENGTH_SHORT).show()
+                                            senhaParaExcluir = null
+                                        }
                                     )
                                 }
                             }
+                        }) {
+                            Text("Remover", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { senhaParaExcluir = null }) {
+                            Text("Cancelar")
                         }
                     }
-                }
+                )
             }
         }
     }

@@ -66,6 +66,12 @@
             android:exported="false"
             android:label="@string/title_activity_main"
             android:theme="@style/Theme.SuperID" />
+        <activity
+            android:name=".EditPasswordActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SuperID"
+            />
+
     </application>
 
 </manifest>

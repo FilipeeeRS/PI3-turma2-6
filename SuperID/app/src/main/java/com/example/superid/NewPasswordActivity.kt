@@ -100,10 +100,15 @@ fun salvarNovaSenha(
         "accessToken" to accessToken
     )
 
-    db.collection("users")
+    // Caminho: users/{userId}/categorias/{categoria}/senhas/{senhaId}
+    val senhaRef = db.collection("users")
         .document(userId)
-        .collection("passwords")
-        .add(senhaMap)
+        .collection("categorias")
+        .document(categoria)
+        .collection("senhas")
+        .document() // gera um ID aleatório para a senha
+
+    senhaRef.set(senhaMap)
         .addOnSuccessListener {
             Toast.makeText(context, "Senha salva com sucesso!", Toast.LENGTH_SHORT).show()
             onSuccess()
@@ -195,8 +200,9 @@ fun NewPasswordScreen(
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
+                val colorScheme = MaterialTheme.colorScheme
 
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "Adicionar nova senha",
                     style = MaterialTheme.typography.headlineMedium,
@@ -211,36 +217,14 @@ fun NewPasswordScreen(
                     label = { Text("Nome da senha", fontSize = 18.sp) },
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
-                // Wrapper com fundo claro e bordas arredondadas para os TextFields
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TextField(
-                        value = nomeConta,
-                        onValueChange = { nomeConta = it },
-                        label = { Text("Nome da senha", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = colorScheme.surface,
-                            focusedIndicatorColor = colorScheme.primary,
-                            unfocusedIndicatorColor = colorScheme.outline
-                        )
-                    )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Dropdown de categorias estilizado como TextField
+                // Dropdown
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded },
-                    modifier = Modifier.fillMaxWidth(0.85f) // <<< garante largura igual
+                    modifier = Modifier.fillMaxWidth(0.85f)
                 ) {
                     TextField(
                         value = categoria,
@@ -250,7 +234,9 @@ fun NewPasswordScreen(
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                         },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -267,31 +253,9 @@ fun NewPasswordScreen(
                         }
                     }
                 }
-                    TextField(
-                        value = categoria,
-                        onValueChange = { categoria = it },
-                        label = { Text("Categoria", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = colorScheme.surface,
-                            focusedIndicatorColor = colorScheme.primary,
-                            unfocusedIndicatorColor = colorScheme.outline
-                        )
-                    )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    TextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Digite o email", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = colorScheme.surface,
-                            focusedIndicatorColor = colorScheme.primary,
-                            unfocusedIndicatorColor = colorScheme.outline
-                        ),
-                    )
                 TextField(
                     value = email,
                     onValueChange = { email = it },
@@ -299,27 +263,17 @@ fun NewPasswordScreen(
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 TextField(
                     value = senha,
                     onValueChange = { senha = it },
                     label = { Text("Senha", fontSize = 18.sp) },
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
-                    TextField(
-                        value = senha,
-                        onValueChange = { senha = it },
-                        label = { Text("Senha", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = colorScheme.surface,
-                            focusedIndicatorColor = colorScheme.primary,
-                            unfocusedIndicatorColor = colorScheme.outline
-                        ),
-                    )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 TextField(
                     value = descricao,
@@ -327,18 +281,6 @@ fun NewPasswordScreen(
                     label = { Text("Descrição (opcional)", fontSize = 18.sp) },
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
-                    TextField(
-                        value = descricao,
-                        onValueChange = { descricao = it },
-                        label = { Text("Descrição", style = MaterialTheme.typography.bodyMedium) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = colorScheme.surface,
-                            focusedIndicatorColor = colorScheme.primary,
-                            unfocusedIndicatorColor = colorScheme.outline
-                        ),
-                    )
-                }
 
                 if (showError) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -346,7 +288,7 @@ fun NewPasswordScreen(
                         text = "ERRO: nome já existe.",
                         color = colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(0.85f)
                     )
                 }
 
@@ -362,9 +304,7 @@ fun NewPasswordScreen(
                                 descricao = descricao,
                                 nomeConta = nomeConta,
                                 context = context,
-                                onSuccess = {
-                                    onBack()
-                                },
+                                onSuccess = { onBack() },
                                 onError = {
                                     Toast.makeText(context, "Erro ao salvar senha!", Toast.LENGTH_SHORT).show()
                                 }
@@ -387,5 +327,6 @@ fun NewPasswordScreen(
                 }
             }
         }
+
     )
 }
