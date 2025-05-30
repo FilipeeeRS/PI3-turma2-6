@@ -1,76 +1,200 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login com QR Code</title>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 50px auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #qrcode {
-      margin-top: 20px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <h2>Login</h2>
-  <input type="text" placeholder="Usuário" disabled />
-  <input type="password" placeholder="Senha" disabled />
-  <button onclick="gerarQRCode()">Entrar com QR Code</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login com QR Code - SuperID</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  </head>
+  <body>
+    <div class="login-container">
+      <h2>Login SuperID</h2>
+      <input
+        type="text"
+        class="input-disabled"
+        placeholder="Usuário"
+        disabled
+      />
+      <input
+        type="password"
+        class="input-disabled"
+        placeholder="Senha"
+        disabled
+      />
+      <button id="qr-button" onclick="iniciarLoginSuperID()">
+        Entrar com SuperID (QR Code)
+      </button>
 
-  <div id="qrcode"></div>
+      <div id="qrcode-container"></div>
+      <div id="status-message">Clique no botão para gerar o QR Code.</div>
+      <div class="loader" id="loader"></div>
+    </div>
 
-  <script>
-    // Valores predefinidos
-    const url = "www.teste.com"; // <- substitua pelo seu url salvo no Firestore
-    const apiKey = "Q2hpa2VuU3VwZXJTdXBlckNoYWluMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ubw=="; // <- substitua pela chave correta
+    <script>
+      // --- URLs das suas Firebase Functions ---
+      const PERFORM_AUTH_URL = "https://performauth-7ql5gsrjha-uc.a.run.app";
+      const GET_LOGIN_STATUS_URL =
+        "https://getloginstatus-7ql5gsrjha-uc.a.run.app";
 
-    async function gerarQRCode() {
-      try {
-        const response = await axios.post(
-          "https://performauth-7ql5gsrjha-uc.a.run.app",
-          { url, apiKey }, // <-- aqui enviando direto, sem "data"
-          { headers: { "Content-Type": "application/json" } }
-        );
+      // --- Configurações do Site Parceiro (EXEMPLO) ---
+      const partnerSiteUrl = "www.teste.com";
+      const partnerApiKey =
+        "Q2hpa2VuU3VwZXJTdXBlckNoYWluMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ubw==";
 
-        const loginToken = response.data.result.loginToken;
-        const container = document.getElementById("qrcode");
-        container.innerHTML = "";
-        QRCode.toCanvas(loginToken, { width: 256 }, (err, canvas) => {
-          if (err) console.error(err);
-          else container.appendChild(canvas);
-        });
-      } catch (err) {
-        console.error(err);
-        alert("Erro ao gerar QR Code. Verifique a conexão e tente novamente.");
+      let pollingIntervalId = null;
+      let loginTokenGlobal = null;
+      const POLLING_INTERVAL_MS = 3000;
+      const MAX_POLLING_DURATION_MS = 60000;
+      let pollingStartTime = 0;
+
+      const qrButton = document.getElementById("qr-button");
+      const qrCodeContainer = document.getElementById("qrcode-container");
+      const statusMessage = document.getElementById("status-message");
+      const loader = document.getElementById("loader");
+
+      async function iniciarLoginSuperID() {
+        qrButton.disabled = true;
+        qrCodeContainer.innerHTML = "";
+        statusMessage.textContent = "Gerando QR Code...";
+        loader.style.display = "block";
+
+        try {
+          const response = await axios.post(
+            PERFORM_AUTH_URL,
+            { url: partnerSiteUrl, apiKey: partnerApiKey },
+            { headers: { "Content-Type": "application/json" } }
+          );
+
+          loginTokenGlobal = response.data.loginToken;
+
+          if (!loginTokenGlobal) {
+            throw new Error("loginToken não recebido da performAuth.");
+          }
+
+          QRCode.toCanvas(
+            loginTokenGlobal,
+            { width: 256, margin: 2, errorCorrectionLevel: "H" },
+            (err, canvas) => {
+              loader.style.display = "none";
+              if (err) {
+                console.error("Erro ao gerar QR Code no frontend:", err);
+                statusMessage.textContent = "Erro ao exibir QR Code.";
+                qrButton.disabled = false;
+                return;
+              }
+              qrCodeContainer.innerHTML = "";
+              qrCodeContainer.appendChild(canvas);
+              statusMessage.textContent =
+                "Escaneie o QR Code com o app SuperID.";
+
+              iniciarPollingStatus();
+            }
+          );
+        } catch (err) {
+          loader.style.display = "none";
+          console.error(
+            "Erro na chamada performAuth:",
+            err.response ? err.response.data : err.message
+          );
+          statusMessage.textContent = "Erro ao iniciar login. Tente novamente.";
+          alert(
+            "Erro ao iniciar login: " +
+              (err.response?.data?.error || err.message)
+          );
+          qrButton.disabled = false;
+        }
       }
-    }
-  </script>
-</body>
+
+      function iniciarPollingStatus() {
+        if (!loginTokenGlobal) return;
+
+        pararPollingStatus();
+        pollingStartTime = Date.now();
+        statusMessage.textContent = "Aguardando confirmação do app...";
+        loader.style.display = "block";
+
+        pollingIntervalId = setInterval(async () => {
+          if (Date.now() - pollingStartTime > MAX_POLLING_DURATION_MS) {
+            statusMessage.textContent = "Tempo esgotado. Gere um novo QR Code.";
+            pararPollingStatus();
+            qrCodeContainer.innerHTML = "";
+            return;
+          }
+
+          try {
+            const statusResponse = await axios.get(GET_LOGIN_STATUS_URL, {
+              params: { loginToken: loginTokenGlobal },
+            });
+
+            const loginStatus = statusResponse.data;
+            console.log("Status recebido:", loginStatus);
+
+            switch (loginStatus.status) {
+              case "COMPLETED":
+                statusMessage.textContent =
+                  "Login confirmado! Redirecionando...";
+                pararPollingStatus();
+                window.location.href = "welcome.html";
+                break;
+              case "PENDING":
+                statusMessage.textContent =
+                  "Aguardando confirmação do app... (Tentativa: " +
+                  Math.round(
+                    (Date.now() - pollingStartTime) / POLLING_INTERVAL_MS
+                  ) +
+                  ")";
+                break;
+              case "NOT_FOUND":
+              case "EXPIRED_OR_MAX_ATTEMPTS":
+                statusMessage.textContent =
+                  loginStatus.error ||
+                  "Token inválido ou expirado. Gere um novo QR Code.";
+                pararPollingStatus();
+                qrCodeContainer.innerHTML = "";
+                break;
+              case "ERROR":
+                statusMessage.textContent =
+                  "Erro ao verificar status: " +
+                  (loginStatus.error || "Tente novamente.");
+                pararPollingStatus();
+                break;
+              default:
+                statusMessage.textContent =
+                  "Status desconhecido. Aguardando...";
+            }
+          } catch (err) {
+            console.error(
+              "Erro ao chamar getLoginStatus:",
+              err.response ? err.response.data : err.message
+            );
+            if (
+              err.response &&
+              (err.response.status === 404 || err.response.status === 410)
+            ) {
+              statusMessage.textContent =
+                err.response.data.error ||
+                "Token inválido ou expirado. Gere um novo QR Code.";
+            } else {
+              statusMessage.textContent =
+                "Erro ao verificar status. Verifique o console.";
+            }
+            pararPollingStatus();
+          }
+        }, POLLING_INTERVAL_MS);
+      }
+
+      function pararPollingStatus() {
+        if (pollingIntervalId) {
+          clearInterval(pollingIntervalId);
+          pollingIntervalId = null;
+        }
+        qrButton.disabled = false;
+        loader.style.display = "none";
+      }
+
+      window.addEventListener("beforeunload", pararPollingStatus);
+    </script>
+  </body>
 </html>
