@@ -1,5 +1,6 @@
 package com.example.superid
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,6 +28,17 @@ class WelcomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Verifica se é a primeira vez que o app é aberto
+        val sharedPref = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val isFirstLaunch = sharedPref.getBoolean("is_first_launch", true)
+
+        if (!isFirstLaunch) {
+            // Se não for a primeira vez, vá direto para a MainActivity (ou LoginActivity, como você preferir)
+            val intent = Intent(this, MainActivity::class.java) // ou LoginActivity::class.java
+            startActivity(intent)
+            finish() // Finaliza a WelcomeActivity para que o usuário não possa voltar
+            return // Sai do onCreate para não carregar a WelcomeScreen
+        }
         setContent {
             SuperIDTheme {
                 WelcomeScreen()

@@ -1,5 +1,6 @@
 package com.example.superid
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -132,6 +133,14 @@ fun TermsScreen(modifier: Modifier = Modifier) {
 
                     Button(
                         onClick = {
+                            // Marca que o app já foi aberto
+                            val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                            with (sharedPref.edit()) {
+                                putBoolean("is_first_launch", false)
+                                apply()
+                            }
+
+                            // Vai para a MainActivity e finaliza as atividades Welcome e Terms
                             val intent = Intent(context, MainActivity::class.java)
                             context.startActivity(intent)
                             (context as? ComponentActivity)?.finish()
