@@ -40,7 +40,7 @@ Configuração inicial:
 Execução:
 - Conecte um dispositivo Android ou use um emulador.
 - Execute o app (Run > Run 'app').
-
+---------------------------------
 Parte Web
 
 Pré-requisitos:

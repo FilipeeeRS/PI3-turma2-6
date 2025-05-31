@@ -16,62 +16,65 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation.Companion.None
 import androidx.compose.ui.text.style.TextDecoration
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 class LoginActivity : ComponentActivity() {
-    private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        auth = FirebaseAuth.getInstance()
+
         setContent {
             SuperIDTheme {
-                TelaLogin { email, senha -> loginUser(email, senha) }
+                TelaLogin { email, senha ->
+                    loginUser(email, senha, this) { mensagem ->
+                        Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
+}
 
-    private fun loginUser(email: String, senha: String) {
+    fun loginUser(email: String, senha: String, context: android.content.Context, onResult: (String) -> Unit) {
+        val auth = FirebaseAuth.getInstance()
+
         auth.signInWithEmailAndPassword(email, senha)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Login bem-sucedido
                     val uid = auth.currentUser?.uid
                     Log.i("AUTH-INFO", "Usuário autenticado: $uid")
-                    Toast.makeText(this, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, HomeActivity::class.java)
+
+                    onResult("Login realizado com sucesso!")
+
+                    val intent = Intent(context, HomeActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
+                    context.startActivity(intent)
+
                 } else {
-                    // Falha no login
+                    val exception = task.exception
+                    val errorMessage = when ((exception as? com.google.firebase.auth.FirebaseAuthException)?.errorCode) {
+                        "ERROR_INVALID_EMAIL", "ERROR_WRONG_PASSWORD" -> "Email ou senha incorreta. Por favor, tente novamente."
+                        else -> "Email ou senha incorreta. Por favor, tente novamente."
+                    }
                     Log.e("AUTH-INFO", "Falha na autenticação: ${task.exception}")
-                    Toast.makeText(
-                        this,
-                        "Falha na autenticação: ${task.exception?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    onResult(errorMessage)
                 }
             }
     }
-}
 // Envia email para redefinir senha
 fun sendPasswordReset(email: String, onResult: (String) -> Unit) {
     val auth = Firebase.auth

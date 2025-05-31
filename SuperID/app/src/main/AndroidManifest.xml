@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.hardware.camera.any" />
+
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
@@ -15,6 +16,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SuperID"
         tools:targetApi="31">
+        <activity
+            android:name=".CadastroActivity"
+            android:exported="false"
+            android:label="@string/title_activity_cadastro"
+            android:theme="@style/Theme.SuperID" />
         <activity
             android:name=".QRCodeActivity"
             android:exported="false"
@@ -57,11 +63,6 @@
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.SuperID" />
         <activity
-            android:name=".CadastroActivity"
-            android:exported="false"
-            android:label="@string/title_activity_cadastro"
-            android:theme="@style/Theme.SuperID" />
-        <activity
             android:name=".MainActivity"
             android:exported="false"
             android:label="@string/title_activity_main"
@@ -69,9 +70,7 @@
         <activity
             android:name=".EditPasswordActivity"
             android:exported="false"
-            android:theme="@style/Theme.SuperID"
-            />
-
+            android:theme="@style/Theme.SuperID" />
     </application>
 
 </manifest>
