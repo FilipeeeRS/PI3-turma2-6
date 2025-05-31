@@ -40,3 +40,21 @@ Configuração inicial:
 Execução:
 - Conecte um dispositivo Android ou use um emulador.
 - Execute o app (Run > Run 'app').
+
+Parte Web
+
+Pré-requisitos:
+- Node.js e npm instalados.
+- Firebase CLI instalada.
+  
+Configuração inicial:
+- Acesse a pasta das Firebase Functions.
+- Instale as dependências do projeto.
+
+Execução:
+- Faça login no Firebase CLI, se necessário.
+- Selecione o projeto Firebase, se ainda não estiver configurado.
+- Execute as Firebase Functions localmente utilizando o emulador do Firebase ou faça o deploy para o ambiente online.
+- Abra o site parceiro simulado incluído no projeto para testar o fluxo de autenticação com QR Code.
+
+
