@@ -2,6 +2,7 @@ import cors from "cors";
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import {onCall} from "firebase-functions/https";
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -190,7 +191,7 @@ export const confirmLogin = functions.https
     return {success: true};
   });
 
-const MAX_POLL_ATTEMPTS = 3;
+const MAX_POLL_ATTEMPTS = 21;
 const TOKEN_LIFESPAN_MS = 1 * 60 * 1000; // 1 minuto
 
 export const getLoginStatus = functions.https.onRequest(async (req, res) => {
@@ -295,3 +296,26 @@ export const getLoginStatus = functions.https.onRequest(async (req, res) => {
     }
   });
 });
+
+
+export const checkEmailVerification = onCall({region: "us-central1"},
+  async (request) => {
+    const email = (request.data?.email || "").trim().toLowerCase();
+
+    if (!email) {
+      throw new Error("E-mail não fornecido.");
+    }
+
+    try {
+      const userRecord = await admin.auth().getUserByEmail(email);
+      return {verified: userRecord.emailVerified};
+    } catch (error: any) {
+      if (error.code === "auth/user-not-found") {
+        throw new functions.https.HttpsError("not-found",
+          "Usuário não encontrado.");
+      } else {
+        throw new functions.https.HttpsError("internal",
+          "Erro ao verificar e-mail.");
+      }
+    }
+  });
