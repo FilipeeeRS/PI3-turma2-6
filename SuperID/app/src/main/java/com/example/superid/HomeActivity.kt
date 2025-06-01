@@ -112,6 +112,17 @@ fun HomeScreen() {
         )
     }
     val colorScheme = MaterialTheme.colorScheme
+    var isEmailVerified by remember { mutableStateOf(true) }
+
+
+    LaunchedEffect(Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        user?.reload()?.addOnSuccessListener {
+            isEmailVerified = user.isEmailVerified
+        }?.addOnFailureListener {
+            Toast.makeText(context, "Erro ao verificar status do e-mail.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Carregar senhas e categorias do Firestore
     LaunchedEffect(Unit) {
@@ -249,18 +260,27 @@ fun HomeScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 FloatingActionButton(
-
                     onClick = {
-                        val intent = Intent(context, QRCodeActivity::class.java)
-                        context.startActivity(intent)
+                        //Bloqueia o QRcode se a pessoa não tiver verificado seu e-mail
+                        if (isEmailVerified) {
+                            val intent = Intent(context, QRCodeActivity::class.java)
+                            context.startActivity(intent)
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Você precisa verificar seu e-mail antes de usar o QR Code.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     },
-                    containerColor = colorScheme.secondary,
+                    containerColor = if (isEmailVerified) colorScheme.secondary else Color.Gray,
                     contentColor = colorScheme.onPrimary
                 ) {
-                   Icon(
-                       Icons.Default.QrCodeScanner,
-                       contentDescription = "QR Code",
-                   )
+                    Icon(
+                        Icons.Default.QrCodeScanner,
+                        contentDescription = "QR Code",
+                        tint = if (isEmailVerified) colorScheme.onPrimary else Color(0xFFBDBDBD)
+                    )
                 }
 
                 FloatingActionButton(
@@ -283,7 +303,22 @@ fun HomeScreen() {
                 .padding(paddingValues)
                 .background(colorScheme.background)
         ) {
-            Divider(thickness = 10.dp, color = colorScheme.surface)
+            // Mostra aviso se a conta ainda não estiver verificada
+            if (!isEmailVerified) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFFCDD2))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "Sua conta ainda não foi verificada. Verifique sua caixa de entrada para ativar todos os recursos.",
+                        color = Color(0xFFD32F2F),
+                        fontSize = 14.sp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            }
 
             Row(
                 modifier = Modifier
@@ -342,7 +377,7 @@ fun HomeScreen() {
                                                         }
                                                 }
                                             }) {
-                                                Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
+                                                Icon(Icons.Default.Delete, contentDescription = "Remover", tint = Color(0xFFD32F2F))
                                             }
                                         }
                                     }
@@ -437,7 +472,7 @@ fun HomeScreen() {
                                 IconButton(onClick = {
                                     senhaParaExcluir = Triple(id, categoriaDaSenha, senhaItem)
                                 }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error)
+                                    Icon(Icons.Default.Delete, contentDescription = "Remover", tint = Color(0xFFD32F2F))
                                 }
                             }
 

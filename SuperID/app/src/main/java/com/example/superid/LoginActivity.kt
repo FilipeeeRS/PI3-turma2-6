@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 
 class LoginActivity : ComponentActivity() {
@@ -76,35 +77,30 @@ class LoginActivity : ComponentActivity() {
             }
     }
 // Envia email para redefinir senha
-fun sendPasswordReset(email: String, onResult: (String) -> Unit) {
-    val auth = Firebase.auth
+fun sendPasswordReset(email: String, onResultado: (String) -> Unit) {
+    val functions = Firebase.functions("us-central1")
+    functions
+        .getHttpsCallable("checkEmailVerification")
+        .call(hashMapOf("email" to email))
+        .addOnSuccessListener { result ->
+            val data = result.data as? Map<*, *>
+            val isVerified = data?.get("verified") as? Boolean ?: false
 
-    // Tentativa de login com senha inválida só pra puxar o user
-    auth.signInWithEmailAndPassword(email, "123")
-        .addOnCompleteListener { task ->
-            val exception = task.exception
-            val user = auth.currentUser
-
-            if (task.isSuccessful || exception?.message?.contains("The password is invalid") == true) {
-                // Verifica se o email está verificado
-                if (user != null && user.isEmailVerified) {
-                    auth.sendPasswordResetEmail(email)
-                        .addOnCompleteListener { resetTask ->
-                            if (resetTask.isSuccessful) {
-                                onResult("E-mail de redefinição enviado com êxito!")
-                            } else {
-                                onResult("Falha ao enviar e-mail.")
-                            }
+            if (isVerified) {
+                Firebase.auth.sendPasswordResetEmail(email)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            onResultado("E-mail de redefinição enviado com sucesso.")
+                        } else {
+                            onResultado("Erro ao enviar o e-mail: ${task.exception?.message}")
                         }
-                }
+                    }
             } else {
-                val errorMessage = when ((exception as? com.google.firebase.auth.FirebaseAuthException)?.errorCode) {
-                    "ERROR_USER_NOT_FOUND" -> "Usuário não encontrado."
-                    "ERROR_INVALID_EMAIL" -> "E-mail inválido."
-                    else -> "E-mail não verificado."
-                }
-                onResult(errorMessage)
+                onResultado("Este e-mail ainda não foi verificado.")
             }
+        }
+        .addOnFailureListener { exception ->
+            onResultado("Erro ao verificar e-mail: ${exception.message}")
         }
 }
 
@@ -126,14 +122,14 @@ fun ForgotPasswordDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = { email = it.trim() },
                     label = { Text("E-mail") }
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                onSend(email)
+                onSend(email.trim().lowercase())
                 onDismiss()
             }) {
                 Text("Enviar")
@@ -144,6 +140,7 @@ fun ForgotPasswordDialog(
                 Text("Cancelar")
             }
         }
+
     )
 }
 
@@ -290,7 +287,8 @@ fun TelaLogin(
             ForgotPasswordDialog(
                 onDismiss = { dialogoEsqueceuSenha = false },
                 onSend = { emailDigitado ->
-                    sendPasswordReset(emailDigitado) { resultado ->
+                    val emailFormatado = emailDigitado.trim().lowercase()
+                    sendPasswordReset(emailFormatado) { resultado ->
                         Toast.makeText(context, resultado, Toast.LENGTH_LONG).show()
                     }
                 }

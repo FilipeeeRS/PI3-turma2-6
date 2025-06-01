@@ -139,12 +139,6 @@
                 window.location.href = "welcome.html";
                 break;
               case "PENDING":
-                statusMessage.textContent =
-                  "Aguardando confirmação do app... (Tentativa: " +
-                  Math.round(
-                    (Date.now() - pollingStartTime) / POLLING_INTERVAL_MS
-                  ) +
-                  ")";
                 break;
               case "NOT_FOUND":
               case "EXPIRED_OR_MAX_ATTEMPTS":
