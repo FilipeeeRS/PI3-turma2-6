@@ -1,5 +1,6 @@
 package com.example.superid
 
+// Importações necessárias para funcionalidades
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 
+// Tela que exibe os Termos de Uso do app
 class TermsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,29 +43,29 @@ fun TermsScreenPreview() {
 
 @Composable
 fun TermsScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current // Obtém o contexto da tela atual
+    val colorScheme = MaterialTheme.colorScheme // Obtém o esquema de cores atual
 
-    Box(
+    Box( // Caixa ocupando a tela inteira
         modifier = modifier
             .fillMaxSize()
             .background(colorScheme.background)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Card(
+        Card( // Card para colocar o conteúdo
             colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Column(
+            Column( // Coluna para verticalizar os elementos
                 modifier = Modifier
                     .padding(24.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
+                Text( // Título
                     "Termos de Uso – SuperID",
                     style = MaterialTheme.typography.titleLarge,
                     color = colorScheme.onSurface
@@ -71,7 +73,7 @@ fun TermsScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
+                Text( // Texto dos termos
                     """
                     1. Uso do Aplicativo
                     - Fornecer informações corretas ao realizar o cadastro.
@@ -111,13 +113,13 @@ fun TermsScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Row(
+                Row( // Botões para aceitar ou recusar na mesma linha
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Button(
+                    Button( // Botão para recusar
                         onClick = {
-                            (context as? ComponentActivity)?.finish()
+                            (context as? ComponentActivity)?.finish() // Fecha a tela
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -132,7 +134,7 @@ fun TermsScreen(modifier: Modifier = Modifier) {
                     }
 
                     Button(
-                        onClick = {
+                        onClick = { // Botão para aceitar
                             // Marca que o app já foi aberto
                             val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                             with (sharedPref.edit()) {
@@ -143,7 +145,7 @@ fun TermsScreen(modifier: Modifier = Modifier) {
                             // Vai para a MainActivity e finaliza as atividades Welcome e Terms
                             val intent = Intent(context, MainActivity::class.java)
                             context.startActivity(intent)
-                            (context as? ComponentActivity)?.finish()
+                            (context as? ComponentActivity)?.finish() // Fecha a tela de termos
                         },
                         modifier = Modifier
                             .weight(1f)

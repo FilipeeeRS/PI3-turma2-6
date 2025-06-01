@@ -1,5 +1,6 @@
 package com.example.superid
 
+// Importações necessárias para funcionalidades
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -24,10 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 
+// Tela de boas-vindas que é exibida apenas na primeira vez que o app é aberto
 class WelcomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         // Verifica se é a primeira vez que o app é aberto
         val sharedPref = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val isFirstLaunch = sharedPref.getBoolean("is_first_launch", true)
@@ -60,13 +63,13 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
 
-    Box(
+    Box( // Caixa para o fundo
         modifier = modifier
             .fillMaxSize()
             .background(colorScheme.background)
             .padding(24.dp)
     ) {
-        Card(
+        Card( // Cartão central da tela, com sombra e padding
             colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
             modifier = Modifier
                 .fillMaxWidth()
@@ -74,17 +77,17 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
             shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Column(
+            Column( // Coluna para os elementos da tela
                 modifier = Modifier
                     .padding(32.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
+                Row( // Linha para o título e a logo ficarem juntos
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
+                    Text( // Título
                         "O que é o SuperID?",
                         fontSize = 30.sp,
                         color = colorScheme.onSurface,
@@ -92,7 +95,7 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
                         modifier = Modifier.weight(1f)
                     )
 
-                    Image(
+                    Image( // Logo
                         painter = painterResource(R.drawable.ic_launcher),
                         contentDescription = "Logo",
                         modifier = Modifier
@@ -104,7 +107,7 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
+                Text( // Descrição do app
                     "O SuperID é um aplicativo para Android que permite fazer login em sites de forma rápida e segura, sem precisar digitar senha. Basta escanear um QR Code!\n\n" +
                             "Com o SuperID, você pode:\n" +
                             "- Fazer login em sites parceiros usando QR Code, sem digitar senha\n" +
@@ -120,21 +123,21 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {
+                Button( // Botão para ir para a tela de termos
+                    onClick = { // Ao clicar
                         val intent = Intent(context, TermsActivity::class.java)
-                        context.startActivity(intent)
-                        (context as? ComponentActivity)?.finish()
+                        context.startActivity(intent) // Inicia a TermsActivity
+                        (context as? ComponentActivity)?.finish() // Fecha a WelcomeActivity
                     },
-                    colors = ButtonDefaults.buttonColors(
+                    colors = ButtonDefaults.buttonColors( // Cores
                         containerColor = colorScheme.primary,
                         contentColor = colorScheme.onPrimary
                     ),
-                    modifier = Modifier
+                    modifier = Modifier // Largura e altura
                         .widthIn(min = 180.dp)
                         .height(56.dp)
                 ) {
-                    Text("OK", fontSize = 20.sp)
+                    Text("OK", fontSize = 20.sp) // Texto do botão
                 }
             }
         }

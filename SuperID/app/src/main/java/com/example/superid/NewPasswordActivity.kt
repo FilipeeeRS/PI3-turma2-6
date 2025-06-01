@@ -2,6 +2,7 @@
 
 package com.example.superid
 
+// Importações necessárias para funcionalidades
 import android.content.Intent
 import android.os.Bundle
 import android.util.Base64
@@ -31,45 +32,54 @@ import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
+// Classe principal da tela de adicionar nova senha
 class NewPasswordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Verifica se o usuário está logado
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
+            // se user for == null, mostra aviso e redireciona para tela de login se não estiver autenticado
             Toast.makeText(this, "Você precisa estar logado para acessar essa função.", Toast.LENGTH_LONG).show()
-            startActivity(Intent(this, LoginActivity::class.java)) // Altere se o nome da sua tela de login for diferente
+            startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
         }
+        // se estiver logado, segue normalmente
 
+
+        // Define o conteúdo da tela com Compose
         setContent {
             SuperIDTheme {
                 NewPasswordScreen(
-                    onBack = { finish() },
-                    showError = false
+                    onBack = { finish() }, // Função para voltar
+                    showError = false // Inicia sem erro
                 )
             }
         }
     }
 }
 
+// Gera um token de acesso aleatório em base64 para a senha nova
 fun gerarAccessToken(): String {
     val random = SecureRandom()
-    val bytes = ByteArray(192) // 192 bytes ≈ 256 base64 chars
-    random.nextBytes(bytes)
-    return Base64.encodeToString(bytes, Base64.NO_WRAP)
+    val bytes = ByteArray(192) // Gera 192 bytes
+    random.nextBytes(bytes) // Preenche o array com bytes aleatórios
+    return Base64.encodeToString(bytes, Base64.NO_WRAP) // Retorna o token em base64
 }
 
+// Criptografa a senha com AES
 fun criptografarSenha(senha: String): String {
-    val chave = "criptografia2025" // chave AES de 16 bytes
-    val secretKey = SecretKeySpec(chave.toByteArray(), "AES")
-    val cipher = Cipher.getInstance("AES")
-    cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-    val encrypted = cipher.doFinal(senha.toByteArray())
-    return Base64.encodeToString(encrypted, Base64.NO_WRAP)
+    val chave = "criptografia2025" // Chave fixa de 16 bytes (requerido pelo AES) para criptografia
+    val secretKey = SecretKeySpec(chave.toByteArray(), "AES") // Cria a chave AES a partir da string chave
+    val cipher = Cipher.getInstance("AES") // Instância do algoritmo AES
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey) // Define modo de criptografia como encriptar e a chave
+    val encrypted = cipher.doFinal(senha.toByteArray()) // Criptografa os bytes da senha e armazena em encrypted
+    return Base64.encodeToString(encrypted, Base64.NO_WRAP) // Retorna a senha criptografada em base64 para ser salva no firestore
 }
 
+// Função para salvar a nova senha no firestore
 fun salvarNovaSenha(
     categoria: String,
     email: String,
@@ -79,19 +89,22 @@ fun salvarNovaSenha(
     url: String?,
     context: android.content.Context,
     onSuccess: () -> Unit,
-    onError: (Exception) -> Unit
+    onError: (Exception) -> Unit // Função para tratar erros
 ) {
-    val userId = FirebaseAuth.getInstance().currentUser?.uid
-    val db = FirebaseFirestore.getInstance()
+    val userId = FirebaseAuth.getInstance().currentUser?.uid // Pega o ID do usuário logado
+    val db = FirebaseFirestore.getInstance() // Instância do banco
 
     if (userId == null) {
+        // Retorna erro se o usuário não estiver autenticado
         onError(Exception("Usuário não autenticado"))
         return
     }
 
+    // Criptografa a senha e gera token
     val senhaCriptografada = criptografarSenha(senha)
     val accessToken = gerarAccessToken()
 
+    // Mapa com os dados que serão salvos
     val senhaMap = hashMapOf(
         "nomeConta" to nomeConta,
         "category" to categoria,
@@ -102,18 +115,21 @@ fun salvarNovaSenha(
         "uid" to userId
     )
 
+    // Se for uma senha de site e a URL estiver preenchida, adiciona no mapa
     if (categoria == "Sites Web" && !url.isNullOrBlank()) {
         senhaMap["urlSite"] = url.trim()
     }
 
+    // Define o caminho do documento no firestore
     // Caminho: users/{userId}/categorias/{categoria}/senhas/{senhaId}
     val senhaRef = db.collection("users")
         .document(userId)
         .collection("categorias")
         .document(categoria)
         .collection("senhas")
-        .document() // gera um ID aleatório para a senha
+        .document() // Cria um novo ID automaticamente
 
+    // Salva no Firestore
     senhaRef.set(senhaMap)
         .addOnSuccessListener {
             Toast.makeText(context, "Senha salva com sucesso!", Toast.LENGTH_SHORT).show()
@@ -127,48 +143,53 @@ fun salvarNovaSenha(
 
 @Composable
 fun NewPasswordScreen(
-    onBack: () -> Unit = {},
-    showError: Boolean = false
+    onBack: () -> Unit = {},  // Função chamada quando o usuário aperta para voltar
+    showError: Boolean = false // Define se a mensagem de erro será exibida
 ) {
-    val context = LocalContext.current
+    val context = LocalContext.current // Obtém o contexto da tela atual para exibir mensagens
+
+    // Variáveis para armazenar os dados da senha que são digitados pelo usuário
     var nomeConta by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("Selecione uma categoria") }
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
-    var erroURL by remember { mutableStateOf(false) }
+    var erroURL by remember { mutableStateOf(false) } // Indica se a URL já existe
 
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) } // Indica se o dropdown está aberto ou fechado
     var categoryList by remember {
+        // Lista de categorias pré-definidas, não podem ser deletadas nem editadas
         mutableStateOf(
             listOf("Sites Web", "Aplicativos", "Teclados de Acesso Físico")
         )
     }
 
-    // Carregar categorias dinâmicas
+    // Carrega as categorias do Firestore quando a tela é iniciada para atualizar a lista
     LaunchedEffect(Unit) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid != null) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid // Pega o ID do usuário logado
+        if (uid != null) { // Se o usuário estiver autenticado, carrega as categorias
             FirebaseFirestore.getInstance()
-                .collection("users").document(uid).collection("categories")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
+                .collection("users").document(uid).collection("categories") // Caminho do firestore
+                .addSnapshotListener { snapshots, e -> // Add listener para pegar as alterações
+                    if (e != null) { // Se houver erro, mostra mensagem e retorna
                         Toast.makeText(context, "Erro ao carregar categorias", Toast.LENGTH_SHORT).show()
                         return@addSnapshotListener
                     }
+                    // Atualiza a lista de categorias com as do Firestore e as pré-definidas
                     val dynamicCategories = snapshots?.documents?.mapNotNull { it.getString("nome") } ?: emptyList()
                     categoryList = listOf("Sites Web", "Aplicativos", "Teclados de Acesso Físico") + dynamicCategories
                 }
         }
     }
 
-    val colorScheme = MaterialTheme.colorScheme
+    val colorScheme = MaterialTheme.colorScheme // Obtém o esquema de cores atual
 
-    Scaffold(
+    Scaffold( // Barra de topo
         topBar = {
             TopAppBar(
                 title = {
+                    // Título do app e com ícone de cadeado na mesma linha
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -186,6 +207,7 @@ fun NewPasswordScreen(
                     }
                 },
                 navigationIcon = {
+                    // Botão para voltar
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.Default.ArrowBack,
@@ -203,14 +225,17 @@ fun NewPasswordScreen(
         content = { paddingValues ->
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxSize() // Ocupar toda a tela
+                    .padding(paddingValues) // Espaçamento interno
+                    .padding(horizontal = 24.dp, vertical = 16.dp), // Espaçamento interno
+                horizontalAlignment = Alignment.CenterHorizontally // Alinhamento horizontal
             ) {
+
                 val colorScheme = MaterialTheme.colorScheme
 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                // Título da tela
                 Text(
                     text = "Adicionar nova senha",
                     style = MaterialTheme.typography.headlineMedium,
@@ -219,6 +244,7 @@ fun NewPasswordScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // Campo: Nome da conta
                 TextField(
                     value = nomeConta,
                     onValueChange = { nomeConta = it },
@@ -228,7 +254,7 @@ fun NewPasswordScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Dropdown
+                // Dropdown das categorias
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded },
@@ -246,12 +272,13 @@ fun NewPasswordScreen(
                             .menuAnchor()
                             .fillMaxWidth()
                     )
+                    // Lista de categorias para escolher no dropdown
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
                         categoryList.forEach { selectionOption ->
-                            DropdownMenuItem(
+                            DropdownMenuItem( // Botão para escolher a categoria
                                 text = { Text(selectionOption) },
                                 onClick = {
                                     categoria = selectionOption
@@ -261,18 +288,21 @@ fun NewPasswordScreen(
                         }
                     }
                 }
+
+                // Campo de URL só aparece se a categoria for 'Sites Web'
                 if (categoria == "Sites Web") {
                     Spacer(modifier = Modifier.height(16.dp))
                     TextField(
                         value = url,
                         onValueChange = {
                             url = it
-                            erroURL = false
+                            erroURL = false // Limpa erro quando o usuário digita
                         },
                         label = { Text("URL do site", fontSize = 18.sp) },
                         isError = erroURL,
                         modifier = Modifier.fillMaxWidth(0.85f)
                     )
+                    // Mensagem de erro se a URL já existir no firestore
                     if (erroURL) {
                         Text(
                             text = "Você já tem uma senha cadastrada para esse site.",
@@ -283,9 +313,9 @@ fun NewPasswordScreen(
                     }
                 }
 
-
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Campo de email (opcional)
                 TextField(
                     value = email,
                     onValueChange = { email = it },
@@ -295,16 +325,18 @@ fun NewPasswordScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Campo de senha (com ocultação do texto)
                 TextField(
                     value = senha,
                     onValueChange = { senha = it },
                     label = { Text("Senha", fontSize = 18.sp) },
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = PasswordVisualTransformation(), // Oculta a senha digitada pelo usuário
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Campo de descrição (opcional)
                 TextField(
                     value = descricao,
                     onValueChange = { descricao = it },
@@ -312,6 +344,7 @@ fun NewPasswordScreen(
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
 
+                // Mostra erro se o nome da conta já existir
                 if (showError) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -324,15 +357,18 @@ fun NewPasswordScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // Botão de salvar senha
                 Button(
                     onClick = {
-                        if (nomeConta.isNotEmpty() && categoria.isNotEmpty() && senha.isNotEmpty()) {
+                        if (nomeConta.isNotEmpty() && categoria.isNotEmpty() && senha.isNotEmpty()) { // Verifica se todos os campos foram preenchidos
                             val uid = FirebaseAuth.getInstance().currentUser?.uid
-                            if (categoria == "Sites Web" && url.isBlank()) {
+
+                            if (categoria == "Sites Web" && url.isBlank()) { // Verifica se a URL foi preenchida na categiria 'Sites Web'
                                 Toast.makeText(context, "Informe a URL do site.", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
+                            // Verifica se a senha já existe no firestore
                             if (uid != null && categoria == "Sites Web") {
                                 FirebaseFirestore.getInstance()
                                     .collection("users").document(uid)
@@ -340,10 +376,9 @@ fun NewPasswordScreen(
                                     .whereEqualTo("urlSite", url.trim())
                                     .get()
                                     .addOnSuccessListener { docs ->
-                                        if (!docs.isEmpty) {
+                                        if (!docs.isEmpty) { // Se existir, mostra erro
                                             erroURL = true
-                                        } else {
-                                            // prossegue
+                                        } else { // Se não existir, chama função salvarNovaSenha
                                             salvarNovaSenha(
                                                 categoria = categoria,
                                                 email = email,
@@ -359,7 +394,7 @@ fun NewPasswordScreen(
                                             )
                                         }
                                     }
-                            } else {
+                            } else { // Se não for 'Sites Web', chama função salvarNovaSenha normalmente
                                 salvarNovaSenha(
                                     categoria = categoria,
                                     email = email,
@@ -374,18 +409,18 @@ fun NewPasswordScreen(
                                     }
                                 )
                             }
-                        } else {
+                        } else { // Se algum campo não foi preenchido, mostra mensagem
                             Toast.makeText(context, "Preencha os campos obrigatórios!", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                    ,
+                    },
+
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
-                    shape = RoundedCornerShape(16.dp),
+                        .fillMaxWidth(0.85f) // Tamanho
+                        .height(56.dp), // Altura
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary), // Cor
+                    shape = RoundedCornerShape(16.dp), // Arredondamento
                 ) {
-                    Text(
+                    Text( // Texto do botão
                         "Adicionar",
                         fontSize = 20.sp,
                         color = colorScheme.onPrimary
