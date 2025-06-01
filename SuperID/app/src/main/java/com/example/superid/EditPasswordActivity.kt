@@ -1,5 +1,6 @@
 package com.example.superid
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -22,11 +23,7 @@ import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
-import android.util.Base64 // Importar Base64 para descriptografar (se não estiver já na HomeActivity)
-import javax.crypto.Cipher // Importar Cipher (se não estiver já na HomeActivity)
-import javax.crypto.spec.SecretKeySpec // Importar SecretKeySpec (se não estiver já na HomeActivity)
-
-
+import com.google.firebase.firestore.SetOptions
 
 
 
@@ -35,8 +32,9 @@ class EditPasswordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val senhaId = intent.getStringExtra("senhaId") // ID do documento da senha
-        val categoriaDaSenha = intent.getStringExtra("categoriaDaSenha") // A categoria da senha (nova informação)
+        //Senha, categoria da senha e url do site carregados via Intent
+        val senhaId = intent.getStringExtra("senhaId")
+        val categoriaDaSenha = intent.getStringExtra("categoriaDaSenha")
         val urlDoSite = intent.getStringExtra("urlSite")
 
         // Verificação para garantir que temos as informações necessárias
@@ -55,6 +53,119 @@ class EditPasswordActivity : ComponentActivity() {
     }
 }
 
+//Função para salvar as mudanças na senha
+fun savePasswordChanges(context: Context, uid: String, senhaId: String,
+                        nome: String, senha: String, categoriaAtual: String,
+                        novaCategoria: String, url: String,
+                        login: String, description: String,
+                        onUrlError: () -> Unit, onComplete: () -> Unit)
+{
+    val db = FirebaseFirestore.getInstance()
+
+    if (novaCategoria == "Sites Web" && url.isBlank()) {
+        Toast.makeText(context, "Informe a URL do site.", Toast.LENGTH_SHORT).show()
+        return
+    }
+    //
+    val updates = mutableMapOf<String, Any>(
+        "nomeConta" to nome,
+        "password" to criptografarSenha(senha),
+        "category" to novaCategoria
+    )
+
+    if (login.isNotBlank()) {
+        updates["login"] = login.trim()
+    } else {
+        updates["login"] = FieldValue.delete()
+    }
+
+    if (description.isNotBlank()) {
+        updates["description"] = description.trim()
+    } else {
+        updates["description"] = FieldValue.delete()
+    }
+
+    if (novaCategoria == "Sites Web") {
+        updates["urlSite"] = url.trim()
+    } else {
+        // Se a categoria NÃO é "Sites Web", e a categoria anterior ERA "Sites Web", remove o campo de url so site.
+        if (categoriaAtual == "Sites Web") {
+            updates["urlSite"] = FieldValue.delete()
+        }
+    }
+
+    // Lógica para verificar URL duplicada e atualizar a senha
+    fun performUpdateOrMove() {
+        if (novaCategoria != categoriaAtual) {
+
+            // Categoria mudou: move a senha para a nova categoria
+            val oldPasswordRef = db.collection("users").document(uid)
+                .collection("categorias").document(categoriaAtual)
+                .collection("senhas").document(senhaId)
+
+            val newPasswordRef = db.collection("users").document(uid)
+                .collection("categorias").document(novaCategoria)
+                .collection("senhas").document(senhaId)
+
+            // Remove a senha antiga
+            oldPasswordRef.get().addOnSuccessListener { oldDoc ->
+                if (oldDoc.exists()) {
+                    newPasswordRef.set(updates, SetOptions.merge())
+                        .addOnSuccessListener {
+                            oldPasswordRef.delete()
+                                .addOnSuccessListener {
+                                    Toast.makeText(context, "Senha atualizada e movida com sucesso!", Toast.LENGTH_SHORT).show()
+                                    onComplete()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Erro ao remover senha antiga: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(context, "Erro ao mover senha para nova categoria: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                }
+            }.addOnFailureListener { e ->
+                Toast.makeText(context, "Erro ao ler senha antiga para mover: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            // Categoria não mudou: apenas atualiza a senha existente
+            db.collection("users").document(uid)
+                .collection("categorias").document(categoriaAtual)
+                .collection("senhas").document(senhaId)
+                .update(updates)
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    onComplete()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+    // Verifica se a URL já existe
+    if (novaCategoria == "Sites Web") {
+        db.collection("users").document(uid)
+            .collection("categorias").document(novaCategoria)
+            .collection("senhas")
+            .whereEqualTo("urlSite", url.trim())
+            .get()
+            .addOnSuccessListener { docs ->
+                val isDuplicate = docs.documents.any { it.id != senhaId }
+                if (isDuplicate) {
+                    onUrlError()
+                    Toast.makeText(context, "Essa URL já está cadastrada para outra senha nesta categoria.", Toast.LENGTH_LONG).show()
+                } else {
+                    performUpdateOrMove()
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Erro ao verificar URL: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    } else {
+        performUpdateOrMove()
+    }
+}
 
 
 
@@ -69,7 +180,6 @@ fun EditPasswordScreen(
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     val uid = FirebaseAuth.getInstance().currentUser?.uid
-
     var nome by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var categoriaSelecionada by remember { mutableStateOf("Selecione uma categoria") }
@@ -77,15 +187,17 @@ fun EditPasswordScreen(
     var erroURL by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
     var categoryList by remember { mutableStateOf(listOf<String>()) }
+    var login by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
 
     // Carrega campos da senha e as categorias disponíveis
     LaunchedEffect(Unit) {
         if (uid != null) {
             val db = FirebaseFirestore.getInstance()
 
-            // 1. Carrega os dados da senha específica usando o novo caminho
+            //Carrega os dados da senha específica
             db.collection("users").document(uid)
-                .collection("categorias").document(categoriaDaSenha) // Usa a categoria recebida
+                .collection("categorias").document(categoriaDaSenha)
                 .collection("senhas").document(senhaId)
                 .get()
                 .addOnSuccessListener { doc ->
@@ -95,17 +207,19 @@ fun EditPasswordScreen(
                         senha = descriptografarSenha(senhaCriptografada)
                         categoriaSelecionada = doc.getString("category") ?: "Selecione uma categoria"
                         url = doc.getString("urlSite") ?: ""
+                        login = doc.getString("login") ?: ""
+                        description = doc.getString("description") ?: ""
                     } else {
                         Toast.makeText(context, "Senha não encontrada.", Toast.LENGTH_SHORT).show()
-                        onBack() // Volta se a senha não existir
+                        onBack()
                     }
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(context, "Erro ao carregar senha: ${e.message}", Toast.LENGTH_LONG).show()
-                    onBack() // Volta em caso de erro
+                    onBack()
                 }
 
-            // 2. Carrega as categorias dinâmicas para o dropdown
+            //Carrega as categorias dinâmicas para o dropdown
             db.collection("users").document(uid).collection("categories")
                 .addSnapshotListener { snapshots, e ->
                     if (e != null) {
@@ -178,13 +292,41 @@ fun EditPasswordScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    TextField(
+                        value = login,
+                        onValueChange = { login = it },
+                        label = { Text("Login", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Descrição", style = MaterialTheme.typography.bodyMedium) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = colorScheme.surface,
+                            focusedIndicatorColor = colorScheme.primary,
+                            unfocusedIndicatorColor = colorScheme.outline
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         TextField(
-                            value = categoriaSelecionada, // Usando o novo nome da variável de estado
+                            value = categoriaSelecionada,
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Categoria", style = MaterialTheme.typography.bodyMedium) },
@@ -259,154 +401,7 @@ fun EditPasswordScreen(
                 Button(
                     onClick = {
                         if (uid != null) {
-                            val db = FirebaseFirestore.getInstance()
-                            // Validação da URL para "Sites Web"
-                            if (categoriaSelecionada == "Sites Web" && url.isBlank()) {
-                                Toast.makeText(context, "Informe a URL do site.", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
-                            val commonUpdates = mutableMapOf<String, Any>(
-                                "nomeConta" to nome,
-                                "password" to criptografarSenha(senha),
-                                "category" to categoriaSelecionada
-                            )
-
-                            if (categoriaSelecionada == "Sites Web") {
-                                commonUpdates["urlSite"] = url.trim()
-                            } else {
-                                // Se a categoria NÃO é "Sites Web", remove o campo urlSite caso ele exista
-                                commonUpdates["urlSite"] = FieldValue.delete()
-                            }
-
-                            // Verifica se a categoria mudou
-                            if (categoriaSelecionada != categoriaDaSenha) {
-                                // Validação de URL duplicada para Sites Web (quando a categoria muda)
-                                if (categoriaSelecionada == "Sites Web") {
-                                    db.collection("users").document(uid)
-                                        .collection("categorias").document(categoriaSelecionada)
-                                        .collection("senhas")
-                                        .whereEqualTo("urlSite", url.trim())
-                                        .get()
-                                        .addOnSuccessListener { docs ->
-                                            val isDuplicate = docs.documents.any { it.id != senhaId }
-                                            if (isDuplicate) {
-                                                erroURL = true
-                                                Toast.makeText(context, "Essa URL já está cadastrada para outra senha nesta categoria.", Toast.LENGTH_LONG).show()
-                                                return@addOnSuccessListener // Impede a continuação se houver duplicata
-                                            }
-
-                                            // Procede com a movimentação da senha
-                                            val oldPasswordRef = db.collection("users").document(uid)
-                                                .collection("categorias").document(categoriaDaSenha)
-                                                .collection("senhas").document(senhaId)
-
-                                            val newPasswordRef = db.collection("users").document(uid)
-                                                .collection("categorias").document(categoriaSelecionada)
-                                                .collection("senhas").document(senhaId)
-
-                                            oldPasswordRef.get().addOnSuccessListener { oldDoc ->
-                                                if (oldDoc.exists()) {
-                                                    newPasswordRef.set(commonUpdates) // Usa o commonUpdates aqui
-                                                        .addOnSuccessListener {
-                                                            oldPasswordRef.delete()
-                                                                .addOnSuccessListener {
-                                                                    Toast.makeText(context, "Senha atualizada e movida com sucesso!", Toast.LENGTH_SHORT).show()
-                                                                    onBack()
-                                                                }
-                                                                .addOnFailureListener { e ->
-                                                                    Toast.makeText(context, "Erro ao remover senha antiga: ${e.message}", Toast.LENGTH_LONG).show()
-                                                                }
-                                                        }
-                                                        .addOnFailureListener { e ->
-                                                            Toast.makeText(context, "Erro ao mover senha para nova categoria: ${e.message}", Toast.LENGTH_LONG).show()
-                                                        }
-                                                }
-                                            }.addOnFailureListener { e ->
-                                                Toast.makeText(context, "Erro ao ler senha antiga para mover: ${e.message}", Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Toast.makeText(context, "Erro ao verificar URL: ${e.message}", Toast.LENGTH_LONG).show()
-                                        }
-                                } else {
-                                    // Se a categoria mudou e NÃO é "Sites Web", apenas move a senha
-                                    val oldPasswordRef = db.collection("users").document(uid)
-                                        .collection("categorias").document(categoriaDaSenha)
-                                        .collection("senhas").document(senhaId)
-
-                                    val newPasswordRef = db.collection("users").document(uid)
-                                        .collection("categorias").document(categoriaSelecionada)
-                                        .collection("senhas").document(senhaId)
-
-                                    oldPasswordRef.get().addOnSuccessListener { oldDoc ->
-                                        if (oldDoc.exists()) {
-                                            newPasswordRef.set(commonUpdates)
-                                                .addOnSuccessListener {
-                                                    oldPasswordRef.delete()
-                                                        .addOnSuccessListener {
-                                                            Toast.makeText(context, "Senha atualizada e movida com sucesso!", Toast.LENGTH_SHORT).show()
-                                                            onBack()
-                                                        }
-                                                        .addOnFailureListener { e ->
-                                                            Toast.makeText(context, "Erro ao remover senha antiga: ${e.message}", Toast.LENGTH_LONG).show()
-                                                        }
-                                                }
-                                                .addOnFailureListener { e ->
-                                                    Toast.makeText(context, "Erro ao mover senha para nova categoria: ${e.message}", Toast.LENGTH_LONG).show()
-                                                }
-                                        }
-                                    }.addOnFailureListener { e ->
-                                        Toast.makeText(context, "Erro ao ler senha antiga para mover: ${e.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            } else {
-                                // Se a categoria NÃO mudou, apenas atualiza o documento existente
-                                if (categoriaSelecionada == "Sites Web") {
-                                    db.collection("users").document(uid)
-                                        .collection("categorias").document(categoriaDaSenha)
-                                        .collection("senhas")
-                                        .whereEqualTo("urlSite", url.trim())
-                                        .get()
-                                        .addOnSuccessListener { docs ->
-                                            val isDuplicate = docs.documents.any { it.id != senhaId }
-                                            if (isDuplicate) {
-                                                erroURL = true
-                                                Toast.makeText(context, "Essa URL já está cadastrada para outra senha nesta categoria.", Toast.LENGTH_LONG).show()
-                                                return@addOnSuccessListener // Impede a continuação
-                                            }
-
-                                            // Procede com a atualização
-                                            db.collection("users").document(uid)
-                                                .collection("categorias").document(categoriaDaSenha)
-                                                .collection("senhas").document(senhaId)
-                                                .update(commonUpdates) // Usa o commonUpdates aqui
-                                                .addOnSuccessListener {
-                                                    Toast.makeText(context, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
-                                                    onBack()
-                                                }
-                                                .addOnFailureListener {
-                                                    Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_SHORT).show()
-                                                }
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Toast.makeText(context, "Erro ao verificar URL: ${e.message}", Toast.LENGTH_LONG).show()
-                                        }
-                                } else {
-                                    // Se a categoria NÃO mudou e NÃO é "Sites Web", apenas atualiza
-                                    db.collection("users").document(uid)
-                                        .collection("categorias").document(categoriaDaSenha)
-                                        .collection("senhas").document(senhaId)
-                                        .update(commonUpdates)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(context, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show()
-                                            onBack()
-                                        }
-                                        .addOnFailureListener {
-                                            Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_SHORT).show()
-                                        }
-                                }
-                            }
+                            savePasswordChanges(context = context, uid = uid, senhaId = senhaId, nome = nome, senha = senha, categoriaAtual = categoriaDaSenha, novaCategoria = categoriaSelecionada, url = url, login = login, description = description, onUrlError = { erroURL = true }, onComplete = { onBack() })
                         } else {
                             Toast.makeText(context, "Usuário não autenticado.", Toast.LENGTH_SHORT).show()
                         }
@@ -423,3 +418,4 @@ fun EditPasswordScreen(
         }
     )
 }
+

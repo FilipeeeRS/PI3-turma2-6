@@ -1,4 +1,4 @@
-package com.example.superid // Ou seu package
+package com.example.superid
 
 sealed class QRCodeScreenState {
     object Idle : QRCodeScreenState() // Estado inicial, pronto para escanear

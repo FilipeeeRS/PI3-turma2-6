@@ -379,15 +379,8 @@ fun NewPasswordScreen(
                                         if (!docs.isEmpty) { // Se existir, mostra erro
                                             erroURL = true
                                         } else { // Se não existir, chama função salvarNovaSenha
-                                            salvarNovaSenha(
-                                                categoria = categoria,
-                                                email = email,
-                                                senha = senha,
-                                                descricao = descricao,
-                                                nomeConta = nomeConta,
-                                                url = if (categoria == "Sites Web") url else null,
-                                                context = context,
-                                                onSuccess = { onBack() },
+                                            salvarNovaSenha(categoria = categoria,email = email,senha = senha,descricao = descricao,nomeConta = nomeConta,
+                                                url = if (categoria == "Sites Web") url else null, context = context, onSuccess = { onBack() },
                                                 onError = {
                                                     Toast.makeText(context, "Erro ao salvar senha!", Toast.LENGTH_SHORT).show()
                                                 }
@@ -395,15 +388,8 @@ fun NewPasswordScreen(
                                         }
                                     }
                             } else { // Se não for 'Sites Web', chama função salvarNovaSenha normalmente
-                                salvarNovaSenha(
-                                    categoria = categoria,
-                                    email = email,
-                                    senha = senha,
-                                    descricao = descricao,
-                                    nomeConta = nomeConta,
-                                    url = if (categoria == "Sites Web") url else null,
-                                    context = context,
-                                    onSuccess = { onBack() },
+                                salvarNovaSenha(categoria = categoria, email = email, senha = senha, descricao = descricao, nomeConta = nomeConta,
+                                    url = if (categoria == "Sites Web") url else null, context = context, onSuccess = { onBack() },
                                     onError = {
                                         Toast.makeText(context, "Erro ao salvar senha!", Toast.LENGTH_SHORT).show()
                                     }
