@@ -7,8 +7,10 @@ import {onCall} from "firebase-functions/https";
 admin.initializeApp();
 const db = admin.firestore();
 
+//CORS para permitir requisições
 const corsHandler = cors({origin: true});
 
+// Valida a API Key de um parceiro e gera um token de login temporário.
 export const performAuth = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== "POST") {
@@ -77,7 +79,7 @@ export const performAuth = functions.https.onRequest((req, res) => {
   });
 });
 
-
+// Confirma um login associando um userId a um loginToken existente.
 export const confirmLogin = functions.https
   .onCall(async (requestWrapper: any, context) => {
     functions.logger.log("Função confirmLogin INICIADA.");
@@ -137,6 +139,7 @@ export const confirmLogin = functions.https
       userId
     );
 
+    // Valida se loginToken e userId foram fornecidos.
     if (!loginToken || !userId) {
       const loginTokenErrorMsg =
                 "Tipo inválido ou ausente no clientPayload";
@@ -162,9 +165,11 @@ export const confirmLogin = functions.https
       `Processando com loginToken: '${loginToken}' e userId: '${userId}'`
     );
 
+    // Obtém referência ao documento de login no Firestore.
     const loginRef = db.collection("login").doc(loginToken);
     const loginDoc = await loginRef.get();
 
+    // Verifica se o loginToken existe.
     if (!loginDoc.exists) {
       functions.logger.error(
         "Firestore: loginToken não encontrado no documento:",
@@ -176,6 +181,7 @@ export const confirmLogin = functions.https
       );
     }
 
+    // Atualiza o documento de login com o userId e o horário do login.
     functions.logger.log(
       "Documento loginToken encontrado. Atualizando com userId:",
       userId
@@ -188,12 +194,13 @@ export const confirmLogin = functions.https
     functions.logger.log(
       "Documento atualizado com sucesso. Retornando success: true"
     );
-    return {success: true};
+    return {success: true}; // Retorna sucesso.
   });
 
-const MAX_POLL_ATTEMPTS = 21;
-const TOKEN_LIFESPAN_MS = 1 * 60 * 1000; // 1 minuto
+const MAX_POLL_ATTEMPTS = 21; // Número máximo de tentativas de polling.
+const TOKEN_LIFESPAN_MS = 1 * 60 * 1000; // Tempo de vida do token em milissegundos (1 minuto).
 
+// Verifica o status de um loginToken (pendente, completo, expirado) para polling.
 export const getLoginStatus = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== "GET" && req.method !== "POST") {
@@ -206,12 +213,14 @@ export const getLoginStatus = functions.https.onRequest(async (req, res) => {
 
     let loginToken: string | undefined;
 
+    // Extrai loginToken do query (GET) ou body (POST).
     if (req.method === "GET") {
       loginToken = req.query.loginToken as string | undefined;
     } else { // POST
       loginToken = req.body.loginToken as string | undefined;
     }
 
+    // Valida se loginToken foi fornecido.
     if (!loginToken) {
       functions.logger.warn(
         "getLoginStatus: loginToken ausente na requisição."
@@ -247,6 +256,7 @@ export const getLoginStatus = functions.https.onRequest(async (req, res) => {
       const now = Date.now();
       const pollAttemptCount = docData.pollAttemptCount || 0;
 
+      // Verifica se o token expirou por tempo ou por limite de tentativas.
       if (now - createdAt > TOKEN_LIFESPAN_MS ||
                 pollAttemptCount >= MAX_POLL_ATTEMPTS) {
         functions.logger.info(
@@ -297,7 +307,7 @@ export const getLoginStatus = functions.https.onRequest(async (req, res) => {
   });
 });
 
-
+// Verifica o status de verificação de e-mail de um usuário no Firebase Authentication.
 export const checkEmailVerification = onCall({region: "us-central1"},
   async (request) => {
     const email = (request.data?.email || "").trim().toLowerCase();
@@ -307,13 +317,17 @@ export const checkEmailVerification = onCall({region: "us-central1"},
     }
 
     try {
+      // Busca o usuário pelo e-mail no Firebase Auth.
       const userRecord = await admin.auth().getUserByEmail(email);
+      // Retorna se o e-mail do usuário foi verificado.
       return {verified: userRecord.emailVerified};
     } catch (error: any) {
+      // Trata erro específico de usuário não encontrado.
       if (error.code === "auth/user-not-found") {
         throw new functions.https.HttpsError("not-found",
           "Usuário não encontrado.");
       } else {
+        // Trata outros erros internos.
         throw new functions.https.HttpsError("internal",
           "Erro ao verificar e-mail.");
       }

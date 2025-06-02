@@ -87,27 +87,26 @@ dependencies {
 
     dependencies {
         // Firebase
-        implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // Verifique a versão mais recente
+        implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
         implementation("com.google.firebase:firebase-functions-ktx")
         implementation("com.google.firebase:firebase-auth-ktx")
 
-        implementation("androidx.camera:camera-core:${cameraxVersion}") // Use a variável definida com val
+        implementation("androidx.camera:camera-core:${cameraxVersion}")
         implementation("androidx.camera:camera-camera2:${cameraxVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
         implementation("androidx.camera:camera-view:${cameraxVersion}")
 
         // ML Kit Barcode Scanning
-        implementation("com.google.mlkit:barcode-scanning:17.2.0") // Verifique a versão mais recente
+        implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
 
-        // Jetpack Compose (você já deve ter estas)
-        implementation("androidx.compose.ui:ui:...") // Sua versão atual
-        implementation("androidx.compose.material3:material3:...") // Sua versão atual
-        implementation("androidx.activity:activity-compose:...") // Sua versão atual
 
-        // Accompanist Permissions (para facilitar o gerenciamento de permissões em Compose)
-        // Verifique a versão mais recente do Accompanist
-        implementation("com.google.accompanist:accompanist-permissions:0.34.0") // Ou mais recente
+        implementation("androidx.compose.ui:ui:...")
+        implementation("androidx.compose.material3:material3:...")
+        implementation("androidx.activity:activity-compose:...")
+
+
+        implementation("com.google.accompanist:accompanist-permissions:0.34.0") 
     }
 
     //firebase

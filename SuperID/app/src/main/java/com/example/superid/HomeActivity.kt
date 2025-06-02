@@ -67,9 +67,9 @@ fun deletarSenha(userId: String, categoria: String, senhaId: String, onSuccess: 
     val db = FirebaseFirestore.getInstance()
     db.collection("users")
         .document(userId)
-        .collection("categorias") // Novo caminho
-        .document(categoria)     // Novo caminho
-        .collection("senhas")    // Novo caminho
+        .collection("categorias")
+        .document(categoria)
+        .collection("senhas")
         .document(senhaId)
         .delete()
         .addOnSuccessListener { onSuccess() }
@@ -92,14 +92,11 @@ fun HomeScreen() {
     var expanded by remember { mutableStateOf(false) }
     var logoutDialog by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("Categorias") }
-    // passwordList agora armazena Map<String, Any> para os dados da senha
     var passwordList by remember { mutableStateOf<List<Triple<String, String, Map<String, Any>>>>(emptyList()) }
-
     val filteredPasswords = remember(passwordList, selectedCategory) {
         if (selectedCategory == "Todas" || selectedCategory == "Categorias") {
             passwordList
         } else {
-            // A filtragem agora usa o segundo elemento do Triple (a categoria da senha)
             passwordList.filter { (_, categoryOfPassword, _) ->
                 categoryOfPassword == selectedCategory
             }
@@ -151,8 +148,7 @@ fun HomeScreen() {
             val allActiveCategories = (categoriasFixas.drop(1) + dynamicCategories).distinct() // remove "Todas" e garante unicidade
             categoryList = (categoriasFixas + dynamicCategories).toMutableList() // Atualiza a lista de categorias para a UI
 
-            // Agora, para cada categoria ativa, adicionamos um listener para as senhas
-            // Usando MutableState para armazenar os listeners ativos e limpá-los.
+            // Listener para as senhas
             val currentPasswordListeners = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
             val newPasswordList = mutableListOf<Triple<String, String, Map<String, Any>>>()
 
@@ -228,7 +224,7 @@ fun HomeScreen() {
                                 contentDescription = "Secure",
                                 modifier = Modifier.padding(start = 8.dp),
 
-                            )
+                                )
 
                             Spacer(modifier = Modifier.weight(1f))
 
@@ -241,7 +237,7 @@ fun HomeScreen() {
                                         logoutDialog = true
                                     },
 
-                            )
+                                )
                         }
                     }
                 },
@@ -359,6 +355,7 @@ fun HomeScreen() {
                                         Text(category, color = colorScheme.onSurface, modifier = Modifier.weight(1f))
                                         if (category !in listOf("Todas", "Sites Web", "Aplicativos", "Teclados de Acesso Físico")) {
                                             IconButton(onClick = {
+                                                // Remove a categoria
                                                 val userId = FirebaseAuth.getInstance().currentUser?.uid
                                                 if (userId != null) {
                                                     Firebase.firestore.collection("users").document(userId)
@@ -505,7 +502,7 @@ fun HomeScreen() {
 
                             Text(
                                 text = if (senhaVisivel)
-                                   "Senha: " + descriptografarSenha(senhaCriptografada ?: "")
+                                    "Senha: " + descriptografarSenha(senhaCriptografada ?: "")
                                 else
                                     "Senha: ••••••••",
                                 fontSize = 16.sp

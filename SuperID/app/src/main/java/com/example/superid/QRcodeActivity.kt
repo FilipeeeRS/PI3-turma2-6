@@ -49,17 +49,23 @@ class QRCodeActivity : ComponentActivity() {
     }
 }
 
+// Composable interface de leitura do QR Code e estado.
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun QRCodeScreen(onBack: () -> Unit = {}) {
+    // Obtém instâncias dos serviços Firebase para autenticação e funções.
     val functions = Firebase.functions
     val auth = Firebase.auth
 
+    // Variável de estado para controlar a UI da tela.
     var uiState by remember { mutableStateOf<QRCodeScreenState>(QRCodeScreenState.Idle) }
+    // Gerencia o estado da permissão de câmera.
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
+    // Controla se o escaneamento de QR Code está ativo.
     var allowScanning by remember { mutableStateOf(true) }
 
+    // Efeito para permitir novo escaneamento quando o estado volta para Idle.
     LaunchedEffect(uiState) {
         if (uiState == QRCodeScreenState.Idle) {
             allowScanning = true
@@ -115,18 +121,19 @@ fun QRCodeScreen(onBack: () -> Unit = {}) {
                                             allowScanning = false
                                             uiState = QRCodeScreenState.Processing("Verificando QR Code...")
 
-
                                             Log.d("QRCodeDebug", "Valor escaneado do QR Code (loginToken): '$qrCodeValue'")
 
                                             val currentUser = auth.currentUser
+                                            // Verifica se há um usuário autenticado.
                                             if (currentUser == null) {
                                                 Log.e("QRCodeDebug", "Usuário não autenticado ao tentar confirmar login.")
                                                 uiState = QRCodeScreenState.Error("Usuário não autenticado. Faça login primeiro.")
-                                                return@CameraPreview
+                                                return@CameraPreview // Retorna da lambda onQrCodeScanned.
                                             }
 
                                             Log.d("QRCodeDebug", "UID do usuário atual (userId): '${currentUser.uid}'")
 
+                                            // Prepara dados para enviar à Firebase Function.
                                             val data = hashMapOf(
                                                 "loginToken" to qrCodeValue,
                                                 "userId" to currentUser.uid
@@ -134,7 +141,7 @@ fun QRCodeScreen(onBack: () -> Unit = {}) {
 
                                             Log.d("QRCodeDebug", "Dados enviados para a função: $data")
 
-
+                                            // Chama a Firebase Function 'confirmLogin'.
                                             functions.getHttpsCallable("confirmLogin")
                                                 .call(data)
                                                 .addOnCompleteListener { task ->
@@ -160,12 +167,14 @@ fun QRCodeScreen(onBack: () -> Unit = {}) {
                                     }
                                 )
                             } else {
+                                // Exibido enquanto aguarda para reativar o escaneamento.
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Text("Aguardando para escanear...")
                                 }
                             }
                         }
                     } else {
+                        // UI para solicitar permissão da câmera, se não concedida.
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
@@ -208,6 +217,7 @@ fun QRCodeScreen(onBack: () -> Unit = {}) {
     }
 }
 
+// Composable para exibir a câmera e iniciar a análise de QR codes.
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
@@ -216,17 +226,21 @@ fun CameraPreview(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    // Controla para disparar o evento de scan uma vez por sessão de visualização.
     var hasFiredScanEventThisSession by remember { mutableStateOf(false) }
 
+    // Reseta a flag de evento de scan ao recompor ou entrar na tela.
     LaunchedEffect(key1 = Unit) {
         hasFiredScanEventThisSession = false
     }
 
+    // Integra a PreviewView do Android para mostrar o feed da câmera.
     AndroidView(
         factory = { ctx ->
             val previewView = PreviewView(ctx)
             val executor = ContextCompat.getMainExecutor(ctx)
 
+            // Listener para configurar a câmera quando o CameraProvider estiver pronto.
             cameraProviderFuture.addListener({
                 val cameraProvider = cameraProviderFuture.get()
                 val preview = Preview.Builder().build().also {
@@ -257,6 +271,7 @@ fun CameraPreview(
 
                 try {
                     cameraProvider.unbindAll()
+                    // Vincula os casos de uso (Preview, ImageAnalysis) ao ciclo de vida.
                     cameraProvider.bindToLifecycle(
                         lifecycleOwner,
                         cameraSelector,
@@ -275,6 +290,7 @@ fun CameraPreview(
     )
 }
 
+// Analisa frames da câmera para encontrar QR Codes usando ML Kit.
 private class BarcodeAnalyzer(
     private val onBarcodeDetected: (String) -> Unit,
     private val onError: (Exception) -> Unit
@@ -285,11 +301,13 @@ private class BarcodeAnalyzer(
         .build()
     private val scanner = BarcodeScanning.getClient(options)
 
+    // Mét0do principal que processa cada frame da imagem vindo da câmera.
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            // Processa a imagem com ML Kit e lida com sucesso, falha ou conclusão.
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     if (barcodes.isNotEmpty()) {
