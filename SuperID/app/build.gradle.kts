@@ -1,13 +1,13 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 
     //google-service setup
     id("com.google.gms.google-services")
+    id("org.jetbrains.kotlin.plugin.compose")
 
-    //id("org.jetbrains.kotlin.android")
-    //id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.superid"
-        minSdk = 33
+        minSdk = 29
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -82,6 +82,33 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    val cameraxVersion = "1.3.3"
+
+    dependencies {
+        // Firebase
+        implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // Verifique a versão mais recente
+        implementation("com.google.firebase:firebase-functions-ktx")
+        implementation("com.google.firebase:firebase-auth-ktx")
+
+        implementation("androidx.camera:camera-core:${cameraxVersion}") // Use a variável definida com val
+        implementation("androidx.camera:camera-camera2:${cameraxVersion}")
+        implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
+        implementation("androidx.camera:camera-view:${cameraxVersion}")
+
+        // ML Kit Barcode Scanning
+        implementation("com.google.mlkit:barcode-scanning:17.2.0") // Verifique a versão mais recente
+
+
+        // Jetpack Compose (você já deve ter estas)
+        implementation("androidx.compose.ui:ui:...") // Sua versão atual
+        implementation("androidx.compose.material3:material3:...") // Sua versão atual
+        implementation("androidx.activity:activity-compose:...") // Sua versão atual
+
+        // Accompanist Permissions (para facilitar o gerenciamento de permissões em Compose)
+        // Verifique a versão mais recente do Accompanist
+        implementation("com.google.accompanist:accompanist-permissions:0.34.0") // Ou mais recente
+    }
 
     //firebase
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))

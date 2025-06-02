@@ -1,0 +1,101 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #e8f5e9; /* Um verde claro suave */
+    color: #333;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+  .login-container {
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  h2 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+    font-size: 28px;
+  }
+  
+  .input-disabled {
+    width: calc(100% - 22px); /* Ajuste para padding interno do input */
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    color: #aaa;
+    font-size: 16px;
+    box-sizing: border-box; /* Garante que padding não aumente a largura total */
+  }
+  
+  button {
+    width: 100%;
+    padding: 14px;
+    background-color: #3498db; /* Cor azul mais moderna */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+  }
+  
+  button:hover {
+    background-color: #2980b9;
+  }
+  
+  button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+  
+  #qrcode-container {
+    margin-top: 25px;
+    min-height: 256px; /* Para evitar pulo de layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  #qrcode-container canvas {
+      border: 1px solid #eee;
+      border-radius: 8px;
+  }
+  
+  #status-message {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #555;
+    min-height: 24px; /* Para evitar pulo de layout */
+  }
+  
+  .loader {
+    border: 4px solid #f3f3f3; /* Light grey */
+    border-top: 4px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+    display: none; /* Oculto por padrão */
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  

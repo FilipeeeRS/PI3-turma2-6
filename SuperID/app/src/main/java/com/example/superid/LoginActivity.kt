@@ -8,60 +8,140 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.superid.ui.theme.SuperIDTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation.Companion.None
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
 
 class LoginActivity : ComponentActivity() {
-    private lateinit var auth: FirebaseAuth // Inicializa o FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        auth = FirebaseAuth.getInstance()
+
         setContent {
             SuperIDTheme {
-                TelaLogin { email, senha -> loginUser(email, senha) }
+                TelaLogin { email, senha ->
+                    loginUser(email, senha, this) { mensagem ->
+                        Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
+}
 
-    private fun loginUser(email: String, senha: String) {
+    fun loginUser(email: String, senha: String, context: android.content.Context, onResult: (String) -> Unit) {
+        val auth = FirebaseAuth.getInstance()
+
         auth.signInWithEmailAndPassword(email, senha)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Login bem-sucedido
                     val uid = auth.currentUser?.uid
                     Log.i("AUTH-INFO", "Usuário autenticado: $uid")
-                    Toast.makeText(this, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, HomeActivity::class.java)
+
+                    onResult("Login realizado com sucesso!")
+
+                    val intent = Intent(context, HomeActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
+                    context.startActivity(intent)
+
                 } else {
-                    // Falha no login
+                    val exception = task.exception
+                    val errorMessage = when ((exception as? com.google.firebase.auth.FirebaseAuthException)?.errorCode) {
+                        "ERROR_INVALID_EMAIL", "ERROR_WRONG_PASSWORD" -> "Email ou senha incorreta. Por favor, tente novamente."
+                        else -> "Email ou senha incorreta. Por favor, tente novamente."
+                    }
                     Log.e("AUTH-INFO", "Falha na autenticação: ${task.exception}")
-                    Toast.makeText(
-                        this,
-                        "Falha na autenticação: ${task.exception?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    onResult(errorMessage)
                 }
             }
     }
+// Envia email para redefinir senha
+fun sendPasswordReset(email: String, onResultado: (String) -> Unit) {
+    val functions = Firebase.functions("us-central1")
+    functions
+        .getHttpsCallable("checkEmailVerification")
+        .call(hashMapOf("email" to email))
+        .addOnSuccessListener { result ->
+            val data = result.data as? Map<*, *>
+            val isVerified = data?.get("verified") as? Boolean ?: false
+
+            if (isVerified) {
+                Firebase.auth.sendPasswordResetEmail(email)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            onResultado("E-mail de redefinição enviado com sucesso.")
+                        } else {
+                            onResultado("Erro ao enviar o e-mail: ${task.exception?.message}")
+                        }
+                    }
+            } else {
+                onResultado("Este e-mail ainda não foi verificado.")
+            }
+        }
+        .addOnFailureListener { exception ->
+            onResultado("Erro ao verificar e-mail: ${exception.message}")
+        }
+}
+
+
+// AlertDialog quando clicado "Esqueci minha senha"
+@Composable
+fun ForgotPasswordDialog(
+    onDismiss: () -> Unit,
+    onSend: (String) -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Recuperação de senha") },
+        text = {
+            Column {
+                Text("Digite o e-mail para envio do link de redefinição de senha.")
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it.trim() },
+                    label = { Text("E-mail") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSend(email.trim().lowercase())
+                onDismiss()
+            }) {
+                Text("Enviar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onDismiss() }) {
+                Text("Cancelar")
+            }
+        }
+
+    )
 }
 
 @Preview(showBackground = true)
@@ -73,63 +153,146 @@ fun LoginPreview() {
 }
 
 @Composable
-fun TelaLogin(modifier: Modifier = Modifier, onLoginClick: (String, String) -> Unit) {
+fun TelaLogin(
+    modifier: Modifier = Modifier,
+    onLoginClick: (String, String) -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var senhaVisivel by remember { mutableStateOf(false) }
+    var dialogoEsqueceuSenha by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
 
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colorScheme.background)
+            .padding(24.dp)
     ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+            shape = MaterialTheme.shapes.medium, // igual WelcomeScreen
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp), // igual WelcomeScreen
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .shadow(8.dp, MaterialTheme.shapes.small)
+                )
 
-        Image(
-            painter = painterResource(R.drawable.ic_launcher),
-            contentDescription = "Logo"
-        )
+                Text(
+                    text = "Bem-vindo ao SuperID",
+                    style = typography.titleLarge.copy(color = colorScheme.primary)
+                )
 
-        Spacer(modifier = modifier.height(48.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("E-mail", style = typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        cursorColor = colorScheme.primary
+                    )
+                )
 
-        Text("Acesse agora o SuperID", fontSize = 30.sp)
+                OutlinedTextField(
+                    value = senha,
+                    onValueChange = { senha = it },
+                    label = { Text("Senha", style = typography.bodyMedium) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    visualTransformation = if (senhaVisivel) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
+                            Icon(
+                                imageVector = if (senhaVisivel) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = "Mostrar senha",
+                                tint = colorScheme.primary
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        cursorColor = colorScheme.primary
+                    )
+                )
 
-        Spacer(modifier = modifier.height(64.dp))
-
-        TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Digite o email", fontSize = 18.sp) },
-            modifier = Modifier.fillMaxWidth(0.85f)
-        )
-
-        Spacer(modifier = modifier.height(16.dp))
-
-        // Campo de senha com visibilidade alternada
-        TextField(
-            value = senha,
-            onValueChange = { senha = it },
-            label = { Text("Digite a senha", fontSize = 18.sp) },
-            modifier = Modifier.fillMaxWidth(0.85f),
-            visualTransformation = if (senhaVisivel) None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
-                    Icon(
-                        imageVector = if (senhaVisivel) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                        contentDescription = "Mostrar senha",
-                        tint = Color.Gray
+                TextButton(onClick = { dialogoEsqueceuSenha = true }) {
+                    Text(
+                        "Esqueceu sua senha?",
+                        style = typography.bodySmall.copy(
+                            color = colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
                     )
                 }
+
+                Button(
+                    onClick = { onLoginClick(email.trim(), senha.trim()) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
+                ) {
+                    Text("Entrar", style = typography.titleMedium.copy(color = colorScheme.onPrimary))
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Não possui conta?",
+                        style = typography.bodySmall.copy(color = colorScheme.onSurfaceVariant)
+                    )
+                    TextButton(
+                        onClick = {
+                            val intent = Intent(context, CadastroActivity::class.java)
+                            context.startActivity(intent)
+                        }
+                    ) {
+                        Text(
+                            "Cadastre-se agora",
+                            style = typography.bodySmall.copy(
+                                color = colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        )
+                    }
+                }
             }
-        )
+        }
 
-        Spacer(modifier = modifier.height(24.dp))
-
-        Button(
-            onClick = { onLoginClick(email.trim(), senha.trim()) },
-            modifier = modifier.fillMaxWidth(0.7f),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-        ) {
-            Text("Entrar", fontSize = 24.sp)
+        if (dialogoEsqueceuSenha) {
+            ForgotPasswordDialog(
+                onDismiss = { dialogoEsqueceuSenha = false },
+                onSend = { emailDigitado ->
+                    val emailFormatado = emailDigitado.trim().lowercase()
+                    sendPasswordReset(emailFormatado) { resultado ->
+                        Toast.makeText(context, resultado, Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
         }
     }
 }
